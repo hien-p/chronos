@@ -1,90 +1,80 @@
+import { SealClient, SessionKey, EncryptedObject } from '@mysten/seal';
+import { SuiClient, getFullnodeUrl } from '@mysten/sui/client';
+import { fromHEX } from '@mysten/bcs';
 
-// Placeholder for SEAL Homomorphic Encryption
-// Currently using AES-GCM for demonstration purposes until WASM is available.
+// Testnet Key Servers (from docs)
+// NOTE: These only work if the contract is deployed on Testnet.
+const KEY_SERVERS = [
+    "0x73d05d62c18d9374e3ea529e8e0ed6161da1a141a94d3f76ae3fe4e99356db75",
+    "0xf5d14a81a982144ae441cd7d64b09027f116a468bd36e7eca494f750591623c8"
+];
 
 export const EncryptionService = {
     /**
-     * Generates a random key for AES-GCM.
-     * In a real SEAL implementation, this would generate BFV keys.
+     * Encrypts data using SEAL.
      */
-    async generateKey(): Promise<CryptoKey> {
-        return window.crypto.subtle.generateKey(
-            {
-                name: "AES-GCM",
-                length: 256
-            },
-            true,
-            ["encrypt", "decrypt"]
-        );
+    async encrypt(data: string | Uint8Array, policyId: string, packageId: string): Promise<Uint8Array> {
+        console.log('EncryptionService.encrypt called with:', { dataLength: data.length, policyId, packageId });
+        console.log('Types:', { policyIdType: typeof policyId, packageIdType: typeof packageId });
+
+        // Default to Testnet for SEAL interaction (Localnet won't work with real SEAL nodes)
+        const suiClient = new SuiClient({ url: getFullnodeUrl('testnet') });
+
+        const client = new SealClient({
+            suiClient,
+            serverConfigs: KEY_SERVERS.map(id => ({ objectId: id, weight: 1 })),
+            verifyKeyServers: false
+        });
+
+        // Pass hex strings directly (SealClient expects strings, not Uint8Array)
+        // Ensure 0x prefix
+        const normalizedPackageId = packageId.startsWith('0x') ? packageId : `0x${packageId}`;
+        const normalizedPolicyId = policyId.startsWith('0x') ? policyId : `0x${policyId}`;
+
+        const payload = typeof data === 'string' ? new TextEncoder().encode(data) : data;
+
+        const { encryptedObject } = await client.encrypt({
+            threshold: 1, // 1-of-N for simplicity/demo
+            packageId: normalizedPackageId,
+            id: normalizedPolicyId,
+            data: payload
+        });
+
+        // encryptedObject is already a Uint8Array (from client.d.ts)
+        return encryptedObject;
     },
 
     /**
-     * Encrypts string data.
-     * @param data The plaintext string
-     * @param key The CryptoKey (simulating public key)
-     * @returns Promise<{ data: Uint8Array, iv: Uint8Array }> Encrypted data and IV
+     * Decrypts data using SEAL.
      */
-    async encrypt(data: string, key: CryptoKey): Promise<{ encrypted: Uint8Array, iv: Uint8Array }> {
-        const encodedData = new TextEncoder().encode(data);
-        const iv = window.crypto.getRandomValues(new Uint8Array(12));
+    async decrypt(
+        encryptedBytes: Uint8Array,
+        sessionKey: SessionKey,
+        txBytes: Uint8Array
+    ): Promise<string> {
+        const suiClient = new SuiClient({ url: getFullnodeUrl('testnet') });
 
-        const encryptedBuffer = await window.crypto.subtle.encrypt(
-            {
-                name: "AES-GCM",
-                iv: iv
-            },
-            key,
-            encodedData
-        );
+        const client = new SealClient({
+            suiClient,
+            serverConfigs: KEY_SERVERS.map(id => ({ objectId: id, weight: 1 })),
+            verifyKeyServers: false
+        });
 
-        return {
-            encrypted: new Uint8Array(encryptedBuffer),
-            iv: iv
-        };
+        const decryptedBytes = await client.decrypt({
+            data: encryptedBytes,
+            sessionKey,
+            txBytes,
+        });
+
+        return new TextDecoder().decode(decryptedBytes);
     },
 
     /**
-     * Decrypts data.
-     * @param encryptedData The encrypted Uint8Array
-     * @param iv The initialization vector
-     * @param key The CryptoKey (simulating private key)
-     * @returns Promise<string> The decrypted string
+     * Generates a random 32-byte ID for the SEAL policy.
      */
-    async decrypt(encryptedData: Uint8Array, iv: Uint8Array, key: CryptoKey): Promise<string> {
-        const decryptedBuffer = await window.crypto.subtle.decrypt(
-            {
-                name: "AES-GCM",
-                iv: iv as unknown as BufferSource
-            },
-            key,
-            encryptedData as unknown as BufferSource
-        );
-
-        return new TextDecoder().decode(decryptedBuffer);
-    },
-
-    /**
-     * Helper to export key to string (for storage/transfer simulation)
-     */
-    async exportKey(key: CryptoKey): Promise<string> {
-        const exported = await window.crypto.subtle.exportKey("jwk", key);
-        return JSON.stringify(exported);
-    },
-
-    /**
-     * Helper to import key from string
-     */
-    async importKey(keyStr: string): Promise<CryptoKey> {
-        const jwk = JSON.parse(keyStr);
-        return window.crypto.subtle.importKey(
-            "jwk",
-            jwk,
-            {
-                name: "AES-GCM",
-                length: 256
-            },
-            true,
-            ["encrypt", "decrypt"]
-        );
+    generatePolicyId(): string {
+        const bytes = new Uint8Array(32);
+        window.crypto.getRandomValues(bytes);
+        return Array.from(bytes).map(b => b.toString(16).padStart(2, '0')).join('');
     }
 };

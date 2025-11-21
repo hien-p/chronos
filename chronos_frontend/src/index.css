@@ -3,30 +3,81 @@
 @tailwind utilities;
 
 :root {
-  --foreground-rgb: 255, 255, 255;
-  --background-start-rgb: 3, 3, 5;
-  --background-end-rgb: 0, 0, 0;
+  --neon-cyan: 0, 243, 255;
+  --neon-amber: 255, 184, 0;
+  --neon-red: 255, 0, 60;
+  --bg-dark: 5, 5, 10;
 }
 
 body {
-  color: rgb(var(--foreground-rgb));
-  background: linear-gradient(to bottom,
-      transparent,
-      rgb(var(--background-end-rgb))) rgb(var(--background-start-rgb));
+  color: #fff;
+  background-color: rgb(var(--bg-dark));
+  background-image: 
+    linear-gradient(rgba(0, 243, 255, 0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0, 243, 255, 0.03) 1px, transparent 1px);
+  background-size: 30px 30px;
   min-height: 100vh;
+  font-family: 'JetBrains Mono', 'Roboto Mono', monospace;
   overflow-x: hidden;
 }
 
 @layer utilities {
-  .text-balance {
-    text-wrap: balance;
-  }
-
   .glass-panel {
-    @apply bg-glass-bg backdrop-blur-xl border border-glass-border;
+    @apply bg-black/60 backdrop-blur-md border border-cyan-500/30 shadow-[0_0_15px_rgba(0,243,255,0.1)];
   }
 
-  .neon-text {
-    text-shadow: 0 0 10px rgba(59, 130, 246, 0.5);
+  .text-neon-blue {
+    color: rgb(var(--neon-cyan));
+    text-shadow: 0 0 10px rgba(var(--neon-cyan), 0.5);
+  }
+
+  .text-neon-amber {
+    color: rgb(var(--neon-amber));
+    text-shadow: 0 0 10px rgba(var(--neon-amber), 0.5);
+  }
+
+  .text-neon-red {
+    color: rgb(var(--neon-red));
+    text-shadow: 0 0 10px rgba(var(--neon-red), 0.5);
+  }
+
+  .border-neon-blue {
+    border-color: rgba(var(--neon-cyan), 0.5);
+    box-shadow: 0 0 10px rgba(var(--neon-cyan), 0.2);
+  }
+
+  /* Custom Scrollbar */
+  .custom-scrollbar::-webkit-scrollbar {
+    width: 6px;
+  }
+  .custom-scrollbar::-webkit-scrollbar-track {
+    background: rgba(0,0,0,0.3);
+  }
+  .custom-scrollbar::-webkit-scrollbar-thumb {
+    background: rgba(var(--neon-cyan), 0.3);
+    border-radius: 3px;
+  }
+  .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: rgba(var(--neon-cyan), 0.6);
+  }
+
+  /* CRT Scanline Effect */
+  .scanline {
+    background: linear-gradient(
+      to bottom,
+      rgba(255,255,255,0),
+      rgba(255,255,255,0) 50%,
+      rgba(0,0,0,0.2) 50%,
+      rgba(0,0,0,0.2)
+    );
+    background-size: 100% 4px;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    pointer-events: none;
+    z-index: 9999;
+    opacity: 0.15;
   }
 }

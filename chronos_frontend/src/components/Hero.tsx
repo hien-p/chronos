@@ -1,7 +1,9 @@
 import { motion } from 'framer-motion';
 import { ArrowRight } from 'lucide-react';
+import { useCurrentAccount } from '@mysten/dapp-kit';
 
 export default function Hero() {
+    const account = useCurrentAccount();
     return (
         <section className="relative min-h-screen flex flex-col justify-center items-center text-center px-4 pt-20">
             <motion.div
@@ -42,6 +44,13 @@ export default function Hero() {
             >
                 <a
                     href="#vaults"
+                    onClick={(e) => {
+                        if (!account) {
+                            // If not connected, we still let it scroll (since we added the ID to the access denied section),
+                            // but we also show an alert to guide the user.
+                            alert("Please connect your wallet to initialize a vault.");
+                        }
+                    }}
                     className="group relative inline-flex items-center gap-3 px-8 py-4 bg-neon-blue text-black font-bold font-heading text-lg tracking-wide uppercase rounded-none hover:bg-white transition-all duration-300"
                 >
                     Initialize Vault

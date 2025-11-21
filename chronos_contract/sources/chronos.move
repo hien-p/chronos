@@ -1,5 +1,6 @@
 module chronos_contract::chronos;
 
+use std::string::String;
 use sui::clock::{Self, Clock};
 use sui::event;
 use sui::object::{Self, UID, ID};
@@ -17,13 +18,15 @@ public struct VaultCreated has copy, drop {
     id: ID,
     creator: address,
     recipient: address,
+    blob_id: String,
 }
 
 /// Emitted when the vault is triggered and data is released.
 public struct ReleaseEvent has copy, drop {
     vault_id: ID,
     recipient: address,
-    encrypted_data: vector<u8>,
+    blob_id: String,
+    encrypted_key: vector<u8>,
 }
 
 // === Structs ===
@@ -31,7 +34,8 @@ public struct Vault has key, store {
     id: UID,
     owner: address,
     recipient: address,
-    encrypted_data: vector<u8>, // Mock for Walrus Blob ID + Encryption Key
+    blob_id: String, // Walrus Blob ID
+    encrypted_key: vector<u8>, // Encrypted AES key / SEAL capsule
     last_heartbeat: u64,
     interval: u64,
 }
@@ -41,7 +45,8 @@ public struct Vault has key, store {
 /// Create a new Vault with a specified heartbeat interval and recipient.
 public entry fun create_vault(
     recipient: address,
-    encrypted_data: vector<u8>,
+    blob_id: String,
+    encrypted_key: vector<u8>,
     interval: u64,
     clock: &Clock,
     ctx: &mut TxContext
@@ -49,19 +54,22 @@ public entry fun create_vault(
     let owner = tx_context::sender(ctx);
     let id = object::new(ctx);
     let vault_id = object::uid_to_inner(&id);
+    
     let vault = Vault {
         id,
-        owner: tx_context::sender(ctx),
+        owner,
         recipient,
-        encrypted_data,
+        blob_id,
+        encrypted_key,
         last_heartbeat: clock::timestamp_ms(clock),
         interval,
     };
 
     event::emit(VaultCreated {
         id: vault_id,
-        creator: tx_context::sender(ctx),
+        creator: owner,
         recipient,
+        blob_id: vault.blob_id,
     });
 
     transfer::share_object(vault);
@@ -81,6 +89,18 @@ public entry fun trigger_release(vault: &Vault, clock: &Clock) {
     event::emit(ReleaseEvent {
         vault_id: object::id(vault),
         recipient: vault.recipient,
-        encrypted_data: vault.encrypted_data,
+        blob_id: vault.blob_id,
+        encrypted_key: vault.encrypted_key,
     });
+}
+
+/// SEAL Access Control Function
+/// Checks if the vault is expired and the provided ID matches.
+public entry fun seal_approve(vault: &Vault, id: vector<u8>, clock: &Clock) {
+    // 1. Verify the ID matches the one stored in the vault
+    assert!(vault.encrypted_key == id, ENotOwner); // Reusing ENotOwner as generic auth error or add new error
+    
+    // 2. Verify the vault is expired
+    let current_time = clock::timestamp_ms(clock);
+    assert!(current_time > vault.last_heartbeat + vault.interval, ENotExpired);
 }

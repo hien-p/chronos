@@ -23,7 +23,8 @@ fun test_flow() {
         let mut clock = clock::create_for_testing(test_scenario::ctx(&mut scenario));
         chronos::create_vault(
             recipient,
-            b"encrypted_secret",
+            std::string::utf8(b"test_blob_id"),
+            b"test_encrypted_key",
             interval,
             &clock,
             test_scenario::ctx(&mut scenario)

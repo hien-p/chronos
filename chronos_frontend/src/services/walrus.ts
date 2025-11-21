@@ -11,7 +11,7 @@ export const WalrusService = {
      */
     async uploadBlob(data: Uint8Array): Promise<string> {
         try {
-            const response = await fetch(`${PUBLISHER_URL}/v1/store`, {
+            const response = await fetch(`${PUBLISHER_URL}/v1/blobs`, {
                 method: 'PUT',
                 body: data as unknown as BodyInit,
             });

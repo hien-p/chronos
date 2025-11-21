@@ -27,8 +27,14 @@ flavor = "sui"
 
 [env]
 
-[env.quirpc]
+[env.testnet-v2]
 chain-id = "4c78adac"
-original-published-id = "0x29a0b4b74ce055b05afc8c1cd9f26cb3d271627c0873b3a1af5d91bd4f955408"
-latest-published-id = "0x29a0b4b74ce055b05afc8c1cd9f26cb3d271627c0873b3a1af5d91bd4f955408"
+original-published-id = "0x7c15d7b02655e66d954153b5123b1f0150a558ce3bcdb2bba8dfaaa0ed1b90cf"
+latest-published-id = "0x7c15d7b02655e66d954153b5123b1f0150a558ce3bcdb2bba8dfaaa0ed1b90cf"
+published-version = "1"
+
+[env.testnet]
+chain-id = "4c78adac"
+original-published-id = "0xf06a4ba0f4dcc699aa9587408b1edcae15832fb71e30484464de013045e09b75"
+latest-published-id = "0xf06a4ba0f4dcc699aa9587408b1edcae15832fb71e30484464de013045e09b75"
 published-version = "1"
