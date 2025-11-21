@@ -3,12 +3,12 @@ import Hero from './components/Hero';
 import FeatureGrid from './components/FeatureGrid';
 import VaultInterface from './components/VaultInterface';
 import Footer from './components/Footer';
-import ShaderBackground from './components/ShaderBackground';
+import MatrixBackground from './components/MatrixBackground';
 
 function App() {
   return (
     <main className="relative min-h-screen text-white overflow-hidden selection:bg-neon-blue selection:text-black">
-      <ShaderBackground />
+      <MatrixBackground />
       <Navbar />
 
       <div className="relative z-10">

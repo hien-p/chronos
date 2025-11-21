@@ -1,7 +1,7 @@
 import { motion } from 'framer-motion';
 import { ArrowRight } from 'lucide-react';
 import { useCurrentAccount } from '@mysten/dapp-kit';
-import logo from '../assets/logo.png';
+
 
 export default function Hero() {
     const account = useCurrentAccount();
@@ -13,7 +13,14 @@ export default function Hero() {
                 transition={{ duration: 0.8 }}
                 className="mb-10"
             >
-                <img src={logo} alt="Chronos Logo" className="w-40 h-40 md:w-64 md:h-64 object-contain drop-shadow-[0_0_25px_rgba(0,243,255,0.6)]" />
+                <div className="relative">
+                    <div className="absolute inset-0 bg-neon-blue/20 blur-[100px] rounded-full animate-pulse"></div>
+                    <img
+                        src="/chronos_logo.svg"
+                        alt="Chronos Logo"
+                        className="relative w-64 h-64 md:w-96 md:h-96 object-contain drop-shadow-[0_0_50px_rgba(0,243,255,0.8)] animate-[spin_20s_linear_infinite]"
+                    />
+                </div>
             </motion.div>
 
             <motion.div

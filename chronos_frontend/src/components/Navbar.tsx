@@ -1,6 +1,6 @@
 import { ConnectButton } from '@mysten/dapp-kit';
 import { motion } from 'framer-motion';
-import { Zap } from 'lucide-react';
+
 
 export default function Navbar() {
     return (
@@ -12,8 +12,8 @@ export default function Navbar() {
         >
             <div className="glass-panel rounded-full px-6 py-3 flex items-center justify-between w-full max-w-5xl shadow-[0_0_30px_rgba(0,0,0,0.3)]">
                 <div className="flex items-center gap-2">
-                    <div className="p-2 bg-neon-blue/10 rounded-full border border-neon-blue/30">
-                        <Zap className="w-5 h-5 text-neon-blue" />
+                    <div className="w-10 h-10 flex items-center justify-center">
+                        <img src="/chronos_logo.svg" alt="Chronos" className="w-full h-full object-contain" />
                     </div>
                     <span className="font-heading font-bold text-xl tracking-tighter text-white">
                         CHRONOS

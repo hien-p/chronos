@@ -1,9 +1,9 @@
 import { useState } from 'react';
-import { useCurrentAccount, useSignAndExecuteTransaction, useSuiClientQuery, useSignPersonalMessage } from '@mysten/dapp-kit';
+import { useCurrentAccount, useSignAndExecuteTransaction, useSuiClientQuery, useSignPersonalMessage, ConnectButton } from '@mysten/dapp-kit';
 import { Transaction } from '@mysten/sui/transactions';
 import { PACKAGE_ID } from '../constants';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Plus, RefreshCw, Copy, Loader2, Upload, Lock, User, Clock, Shield, ArrowRight, Key, FileText, X } from 'lucide-react';
+import { Plus, RefreshCw, Loader2, Upload, Lock, User, Clock, Shield, Key, FileText, X, Activity, Download, Settings } from 'lucide-react';
 import clsx from 'clsx';
 import { WalrusService } from '../services/walrus';
 import { EncryptionService } from '../services/encryption';
@@ -258,82 +258,139 @@ export default function VaultInterface() {
         }
     };
 
+
+
     if (!account) {
         return (
-            <div id="vaults" className="flex justify-center items-center min-h-screen bg-black">
-                <div className="glass-panel p-12 rounded-2xl text-center max-w-md border border-neon-red/50 shadow-[0_0_30px_rgba(255,0,60,0.2)]">
-                    <h3 className="font-mono text-3xl font-bold mb-4 text-neon-red tracking-widest">ACCESS DENIED</h3>
-                    <p className="font-mono text-gray-400 mb-8">BIOMETRIC SIGNATURE REQUIRED</p>
-                    <div className="w-full h-1 bg-neon-red/20 mb-8 relative overflow-hidden">
-                        <div className="absolute inset-0 bg-neon-red/50 animate-pulse" />
+            <div className="w-full bg-black border border-red-900/30 rounded-3xl overflow-hidden min-h-[600px] flex flex-col items-center justify-center relative shadow-2xl p-8">
+                <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20 pointer-events-none"></div>
+                <div className="border border-red-900/50 bg-red-950/10 p-12 rounded-xl flex flex-col items-center text-center max-w-md relative overflow-hidden backdrop-blur-sm">
+                    <div className="absolute top-0 left-0 w-full h-1 bg-red-600/50 animate-scanline"></div>
+                    <h2 className="font-mono text-3xl md:text-4xl font-bold text-red-600 tracking-widest mb-2 animate-pulse">ACCESS DENIED</h2>
+                    <div className="h-px w-full bg-red-900/50 my-4" />
+                    <p className="font-mono text-red-400 text-sm tracking-[0.2em] mb-8 uppercase">Biometric Signature Required</p>
+
+                    <div className="flex flex-col gap-4 items-center">
+                        <p className="font-mono text-xs text-red-500/70">Connect wallet to proceed</p>
+                        <ConnectButton className="!bg-red-900/20 !text-red-500 !border !border-red-500/50 !font-mono hover:!bg-red-900/40 transition-colors" />
                     </div>
-                    <p className="font-mono text-xs text-neon-red/70">CONNECT WALLET TO PROCEED</p>
                 </div>
             </div>
-        )
+        );
     }
 
     return (
-        <section id="vaults" className="min-h-screen p-4 md:p-8 max-w-7xl mx-auto">
+        <section id="vaults" className="min-h-screen p-4 md:p-8 max-w-[1600px] mx-auto flex items-center justify-center">
             <div className="scanline" />
             <WalrusShatter isUploading={isDeploying} />
 
-            <div className="glass-panel rounded-3xl overflow-hidden min-h-[800px] flex flex-col md:flex-row relative">
+            <div className="w-full bg-[#09090b] border border-white/10 rounded-3xl overflow-hidden min-h-[800px] flex flex-col md:flex-row relative shadow-2xl">
+
+                {/* Top Light Leak / Glow Effect - Intensified */}
+                <div className="absolute top-0 left-0 w-full h-[2px] bg-gradient-to-r from-transparent via-blue-400 to-transparent shadow-[0_0_40px_rgba(59,130,246,0.8)] z-20 opacity-70"></div>
+                <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-3xl h-64 bg-blue-600/25 blur-[80px] pointer-events-none z-0 mix-blend-screen"></div>
+                <div className="absolute top-0 left-1/2 -translate-x-1/2 w-2/3 h-32 bg-cyan-400/15 blur-[40px] pointer-events-none z-0"></div>
+
                 {/* Sidebar */}
-                <div className="w-full md:w-72 bg-black/40 border-r border-cyan-500/20 p-6 flex flex-col gap-4">
-                    <div className="mb-8">
-                        <h3 className="font-mono text-xs text-neon-cyan tracking-[0.3em] mb-1">TERMINAL</h3>
-                        <h1 className="font-heading text-3xl font-bold text-white">CHRONOS</h1>
+                <div className="w-full md:w-64 bg-[#09090b] border-r border-white/5 p-6 flex flex-col gap-6 relative z-10">
+                    {/* Sidebar Bottom Fade/Blur */}
+                    <div className="absolute bottom-0 left-0 w-full h-40 bg-gradient-to-t from-[#09090b] via-[#09090b]/80 to-transparent pointer-events-none z-20"></div>
+
+                    <div className="mb-2">
+                        <div className="flex items-center gap-3 mb-6">
+                            <div className="w-8 h-8 flex items-center justify-center">
+                                <img
+                                    src="/chronos_logo.svg"
+                                    alt="Chronos Logo"
+                                    className="w-full h-full animate-[spin_10s_linear_infinite]"
+                                />
+                            </div>
+                            <h1 className="font-sans text-xl font-bold text-white tracking-wide">CHRONOS</h1>
+                        </div>
+                        <div className="text-[10px] font-mono text-gray-500 uppercase tracking-widest pl-1">Terminal v2.0</div>
                     </div>
 
-                    <button
-                        onClick={() => setActiveTab('create')}
-                        className={clsx(
-                            "flex items-center gap-4 px-6 py-4 rounded-xl font-mono text-sm transition-all border",
-                            activeTab === 'create'
-                                ? "bg-neon-cyan/10 text-neon-cyan border-neon-cyan/50 shadow-[0_0_15px_rgba(0,243,255,0.2)]"
-                                : "text-gray-500 border-transparent hover:bg-white/5 hover:text-gray-300"
-                        )}
-                    >
-                        <Plus className="w-5 h-5" /> INITIALIZE
-                    </button>
-                    <button
-                        onClick={() => setActiveTab('manage')}
-                        className={clsx(
-                            "flex items-center gap-4 px-6 py-4 rounded-xl font-mono text-sm transition-all border",
-                            activeTab === 'manage'
-                                ? "bg-neon-cyan/10 text-neon-cyan border-neon-cyan/50 shadow-[0_0_15px_rgba(0,243,255,0.2)]"
-                                : "text-gray-500 border-transparent hover:bg-white/5 hover:text-gray-300"
-                        )}
-                    >
-                        <RefreshCw className="w-5 h-5" /> ACTIVE NODES
-                    </button>
-                    <button
-                        onClick={() => setActiveTab('incoming')}
-                        className={clsx(
-                            "flex items-center gap-4 px-6 py-4 rounded-xl font-mono text-sm transition-all border",
-                            activeTab === 'incoming'
-                                ? "bg-neon-cyan/10 text-neon-cyan border-neon-cyan/50 shadow-[0_0_15px_rgba(0,243,255,0.2)]"
-                                : "text-gray-500 border-transparent hover:bg-white/5 hover:text-gray-300"
-                        )}
-                    >
-                        <Copy className="w-5 h-5" /> INCOMING
-                    </button>
+                    <nav className="flex flex-col gap-2">
+                        <button
+                            onClick={() => setActiveTab('create')}
+                            className={clsx(
+                                "w-full flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-medium transition-all duration-200",
+                                activeTab === 'create'
+                                    ? "bg-white/10 text-white shadow-sm ring-1 ring-white/5"
+                                    : "text-gray-500 hover:bg-white/5 hover:text-gray-300"
+                            )}
+                        >
+                            <Plus className="w-4 h-4" /> Initialize
+                        </button>
+                        <button
+                            onClick={() => setActiveTab('manage')}
+                            className={clsx(
+                                "w-full flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-medium transition-all duration-200",
+                                activeTab === 'manage'
+                                    ? "bg-white/10 text-white shadow-sm ring-1 ring-white/5"
+                                    : "text-gray-500 hover:bg-white/5 hover:text-gray-300"
+                            )}
+                        >
+                            <Activity className="w-4 h-4" /> Active Nodes
+                        </button>
+                        <button
+                            onClick={() => setActiveTab('incoming')}
+                            className={clsx(
+                                "w-full flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-medium transition-all duration-200",
+                                activeTab === 'incoming'
+                                    ? "bg-white/10 text-white shadow-sm ring-1 ring-white/5"
+                                    : "text-gray-500 hover:bg-white/5 hover:text-gray-300"
+                            )}
+                        >
+                            <Download className="w-4 h-4" /> Incoming
+                            {(incomingVaults?.length || 0) > 0 && (
+                                <span className="ml-auto bg-blue-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full">
+                                    {incomingVaults?.length}
+                                </span>
+                            )}
+                        </button>
+                    </nav>
 
-                    <div className="mt-auto pt-8 border-t border-white/5">
-                        <div className="flex items-center gap-3 text-xs font-mono text-gray-500">
-                            <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
-                            <span>NETWORK ONLINE</span>
+                    <div className="mt-4">
+                        <h3 className="text-[10px] font-mono text-gray-600 uppercase tracking-widest mb-3 pl-2">Recent Activity</h3>
+                        <div className="space-y-1">
+                            {[1, 2, 3].map((_, i) => (
+                                <div key={i} className="group flex items-center gap-3 px-4 py-2 rounded-lg hover:bg-white/5 transition-colors cursor-pointer">
+                                    <div className={`w-1.5 h-1.5 rounded-full ${i === 0 ? 'bg-green-500' : 'bg-gray-600'} group-hover:scale-125 transition-transform`}></div>
+                                    <div className="flex flex-col">
+                                        <span className="text-xs text-gray-400 group-hover:text-gray-300">Protocol {8080 + i}</span>
+                                        <span className="text-[10px] text-gray-600">2m ago</span>
+                                    </div>
+                                </div>
+                            ))}
                         </div>
-                        <div className="mt-2 text-[10px] font-mono text-gray-600 truncate">
-                            {account.address}
+                    </div>
+
+                    <div className="mt-auto relative z-30">
+                        <div className="p-4 rounded-xl bg-white/5 border border-white/5">
+                            <div className="flex items-center gap-3 mb-3">
+                                <div className="w-8 h-8 rounded-full bg-gradient-to-r from-gray-700 to-gray-600 flex items-center justify-center text-xs font-bold text-white">
+                                    0x
+                                </div>
+                                <div className="flex flex-col overflow-hidden">
+                                    <span className="text-xs font-medium text-white truncate">
+                                        {account ? `${account.address.slice(0, 6)}...${account.address.slice(-4)}` : 'Not Connected'}
+                                    </span>
+                                    <span className="text-[10px] text-gray-500 flex items-center gap-1">
+                                        <div className={`w-1.5 h-1.5 rounded-full ${account ? 'bg-green-500' : 'bg-red-500'}`}></div>
+                                        {account ? 'Online' : 'Offline'}
+                                    </span>
+                                </div>
+                            </div>
+                            <button className="w-full flex items-center justify-center gap-2 py-2 rounded-lg bg-black/20 hover:bg-black/40 text-xs text-gray-400 hover:text-white transition-all border border-white/5">
+                                <Settings className="w-3 h-3" /> System Settings
+                            </button>
                         </div>
                     </div>
                 </div>
 
                 {/* Content Area */}
-                <div className="flex-1 p-8 md:p-12 relative overflow-hidden bg-black/20">
-                    <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-neon-cyan/50 to-transparent opacity-30" />
+                <div className="flex-1 p-8 bg-[#05060a] relative overflow-hidden">
 
                     <AnimatePresence mode="wait">
                         {activeTab === 'create' ? (
@@ -342,235 +399,185 @@ export default function VaultInterface() {
                                 initial={{ opacity: 0, y: 20 }}
                                 animate={{ opacity: 1, y: 0 }}
                                 exit={{ opacity: 0, y: -20 }}
-                                className="h-full"
+                                className="h-full flex flex-col"
                             >
+                                <div className="flex items-center justify-between mb-8">
+                                    <h2 className="text-2xl font-semibold text-white">Initialize Protocol</h2>
+                                    <div className="flex gap-2">
+                                        <button className="p-2 text-gray-400 hover:text-white transition-colors"><RefreshCw className="w-5 h-5" /></button>
+                                        <button className="p-2 text-gray-400 hover:text-white transition-colors"><User className="w-5 h-5" /></button>
+                                    </div>
+                                </div>
+
                                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 h-full">
                                     {/* Left Column: The Form */}
                                     <div className="lg:col-span-2 space-y-6">
 
                                         {/* Step 1: Payload */}
-                                        <div className="bg-black/40 border border-white/10 rounded-xl p-6 backdrop-blur-md group hover:border-neon-cyan/30 transition-all">
-                                            <div className="flex items-center justify-between mb-4">
-                                                <h3 className="text-neon-cyan text-xs font-bold tracking-[0.2em] flex items-center gap-2 uppercase">
-                                                    <Upload className="w-4 h-4" />
-                                                    1. CONFIDENTIAL PAYLOAD
+                                        <div className="bg-[#09090b] rounded-2xl p-1 overflow-hidden border border-white/5">
+                                            <div className="p-4 border-b border-white/5 flex items-center justify-between">
+                                                <h3 className="text-sm font-medium text-gray-300 flex items-center gap-2">
+                                                    <Upload className="w-4 h-4 text-blue-500" />
+                                                    Confidential Payload
                                                 </h3>
-                                                <div className="flex bg-black/50 rounded-lg p-1 border border-white/10">
+                                                <div className="flex bg-black/20 rounded-lg p-1">
                                                     <button
                                                         onClick={() => setPayloadType('text')}
                                                         className={clsx(
-                                                            "px-3 py-1 text-[10px] font-mono rounded-md transition-all",
-                                                            payloadType === 'text' ? "bg-neon-cyan text-black font-bold" : "text-gray-500 hover:text-white"
+                                                            "px-3 py-1 text-xs font-medium rounded-md transition-all",
+                                                            payloadType === 'text' ? "bg-white/10 text-white" : "text-gray-500 hover:text-gray-300"
                                                         )}
                                                     >
-                                                        TEXT
+                                                        Text
                                                     </button>
                                                     <button
                                                         onClick={() => setPayloadType('file')}
                                                         className={clsx(
-                                                            "px-3 py-1 text-[10px] font-mono rounded-md transition-all",
-                                                            payloadType === 'file' ? "bg-neon-cyan text-black font-bold" : "text-gray-500 hover:text-white"
+                                                            "px-3 py-1 text-xs font-medium rounded-md transition-all",
+                                                            payloadType === 'file' ? "bg-white/10 text-white" : "text-gray-500 hover:text-gray-300"
                                                         )}
                                                     >
-                                                        FILE
+                                                        File
                                                     </button>
                                                 </div>
                                             </div>
 
-                                            {payloadType === 'text' ? (
-                                                <textarea
-                                                    value={secret}
-                                                    onChange={(e) => setSecret(e.target.value)}
-                                                    rows={6}
-                                                    className="w-full bg-black/60 border border-white/10 rounded-lg p-4 font-mono text-sm focus:border-neon-cyan focus:outline-none focus:ring-1 focus:ring-neon-cyan transition-all text-white placeholder-gray-700"
-                                                    placeholder="ENTER SENSITIVE DATA..."
-                                                />
-                                            ) : (
-                                                <div className="relative w-full h-40 bg-black/60 border border-dashed border-white/20 rounded-lg flex flex-col items-center justify-center hover:border-neon-cyan/50 transition-all group/dropzone">
-                                                    <input
-                                                        type="file"
-                                                        onChange={(e) => setSelectedFile(e.target.files?.[0] || null)}
-                                                        className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+                                            <div className="p-4">
+                                                {payloadType === 'text' ? (
+                                                    <textarea
+                                                        value={secret}
+                                                        onChange={(e) => setSecret(e.target.value)}
+                                                        rows={6}
+                                                        className="w-full bg-[#05060a] border border-white/5 rounded-xl p-4 font-mono text-sm focus:border-blue-500/50 focus:outline-none focus:ring-1 focus:ring-blue-500/50 transition-all text-gray-300 placeholder-gray-700 resize-none"
+                                                        placeholder="Enter sensitive data to encrypt..."
                                                     />
-                                                    {selectedFile ? (
-                                                        <div className="flex flex-col items-center gap-2 z-0">
-                                                            <FileText className="w-8 h-8 text-neon-cyan" />
-                                                            <span className="text-xs font-mono text-white">{selectedFile.name}</span>
-                                                            <span className="text-[10px] font-mono text-gray-500">{(selectedFile.size / 1024).toFixed(2)} KB</span>
-                                                            <button
-                                                                onClick={(e) => {
-                                                                    e.stopPropagation();
-                                                                    setSelectedFile(null);
-                                                                }}
-                                                                className="z-20 mt-2 text-[10px] text-red-500 hover:text-red-400 flex items-center gap-1"
-                                                            >
-                                                                <X className="w-3 h-3" /> REMOVE
-                                                            </button>
-                                                        </div>
-                                                    ) : (
-                                                        <div className="flex flex-col items-center gap-2 text-gray-500 group-hover/dropzone:text-neon-cyan/70 transition-colors">
-                                                            <Upload className="w-8 h-8 mb-2" />
-                                                            <span className="text-xs font-mono uppercase tracking-wider">Drop file or click to upload</span>
-                                                            <span className="text-[10px] font-mono text-gray-600">Any format supported</span>
-                                                        </div>
-                                                    )}
-                                                </div>
-                                            )}
-
-                                            <div className="text-[10px] text-gray-500 mt-2 flex items-center gap-1">
-                                                <Lock className="w-3 h-3" /> SEAL Encryption • Walrus Sharding
+                                                ) : (
+                                                    <div className="relative w-full h-40 bg-[#05060a] border border-dashed border-white/10 rounded-xl flex flex-col items-center justify-center hover:border-blue-500/30 transition-all group/dropzone">
+                                                        <input
+                                                            type="file"
+                                                            onChange={(e) => setSelectedFile(e.target.files?.[0] || null)}
+                                                            className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+                                                        />
+                                                        {selectedFile ? (
+                                                            <div className="flex flex-col items-center gap-2 z-0">
+                                                                <FileText className="w-8 h-8 text-blue-500" />
+                                                                <span className="text-xs font-medium text-white">{selectedFile.name}</span>
+                                                                <span className="text-[10px] text-gray-500">{(selectedFile.size / 1024).toFixed(2)} KB</span>
+                                                                <button
+                                                                    onClick={(e) => {
+                                                                        e.stopPropagation();
+                                                                        setSelectedFile(null);
+                                                                    }}
+                                                                    className="z-20 mt-2 text-[10px] text-red-500 hover:text-red-400 flex items-center gap-1"
+                                                                >
+                                                                    <X className="w-3 h-3" /> Remove
+                                                                </button>
+                                                            </div>
+                                                        ) : (
+                                                            <div className="flex flex-col items-center gap-2 text-gray-600 group-hover/dropzone:text-gray-400 transition-colors">
+                                                                <Upload className="w-8 h-8 mb-2 opacity-50" />
+                                                                <span className="text-xs font-medium">Drop file or click to upload</span>
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                )}
                                             </div>
                                         </div>
 
                                         {/* Step 2: Configuration */}
                                         <div className="grid grid-cols-1 gap-6">
 
-                                            {/* --- REDESIGNED RECIPIENT SECTION --- */}
-                                            <div className="bg-black/40 border border-white/10 rounded-xl p-6 backdrop-blur-md hover:border-neon-cyan/30 transition-all relative overflow-hidden group/recipient">
-                                                {/* Decorative background glow */}
-                                                <div className="absolute top-0 right-0 w-32 h-32 bg-neon-cyan/5 rounded-full blur-2xl pointer-events-none -mr-10 -mt-10 group-hover/recipient:bg-neon-cyan/10 transition-all"></div>
-
-                                                <h3 className="text-neon-cyan text-xs font-bold tracking-[0.2em] flex items-center gap-2 mb-6 relative z-10">
-                                                    <User className="w-4 h-4" />
-                                                    2. DESIGNATE RECIPIENT
-                                                </h3>
-
-                                                <div className="relative z-10">
-                                                    <div className="relative group">
-                                                        {/* Input Glow FX */}
-                                                        <div className="absolute -inset-0.5 bg-gradient-to-r from-neon-cyan/20 to-blue-500/20 rounded-lg blur opacity-0 group-focus-within:opacity-100 transition duration-500"></div>
-
-                                                        <div className="relative bg-[#050505] border border-white/10 rounded-lg flex items-center overflow-hidden">
-                                                            {/* Icon Box */}
-                                                            <div className="pl-5 pr-4 py-6 border-r border-white/10 bg-white/2 flex-shrink-0">
-                                                                <Key className="w-6 h-6 text-neon-cyan/70" />
-                                                            </div>
-
-                                                            {/* The Giant Input */}
-                                                            <input
-                                                                type="text"
-                                                                value={recipient}
-                                                                onChange={(e) => setRecipient(e.target.value)}
-                                                                placeholder="0x..."
-                                                                className="w-full bg-transparent border-none py-6 px-5 text-2xl md:text-3xl text-neon-cyan font-mono tracking-wider focus:ring-0 placeholder-white/5 uppercase"
-                                                                spellCheck={false}
-                                                            />
-
-                                                            {/* Status Indicator */}
-                                                            <div className="pr-6 flex flex-col items-end justify-center gap-1 pointer-events-none">
-                                                                <div className="flex items-center gap-2">
-                                                                    <div className={`h-1.5 w-1.5 rounded-full ${recipient ? 'bg-green-500 shadow-[0_0_5px_rgba(34,197,94,0.8)]' : 'bg-red-500 animate-pulse shadow-[0_0_5px_rgba(239,68,68,0.8)]'}`}></div>
-                                                                    <span className={`text-[9px] font-bold tracking-widest uppercase ${recipient ? 'text-green-500' : 'text-red-500'}`}>
-                                                                        {recipient ? 'VERIFIED' : 'UNVERIFIED'}
-                                                                    </span>
-                                                                </div>
-                                                            </div>
-                                                        </div>
-                                                    </div>
+                                            {/* Recipient Section */}
+                                            <div className="bg-[#09090b] rounded-2xl p-1 overflow-hidden border border-white/5">
+                                                <div className="p-4 border-b border-white/5">
+                                                    <h3 className="text-sm font-medium text-gray-300 flex items-center gap-2">
+                                                        <User className="w-4 h-4 text-blue-500" />
+                                                        Designate Recipient
+                                                    </h3>
                                                 </div>
-
-                                                <div className="mt-4 flex justify-end items-center relative z-10 opacity-80">
-                                                    <div className="text-[10px] text-gray-700 font-mono uppercase tracking-wider">
-                                                        {recipient ? 'Address validated' : 'Waiting for valid address...'}
+                                                <div className="p-4">
+                                                    <div className="relative bg-[#05060a] border border-white/5 rounded-xl flex items-center overflow-hidden group focus-within:border-blue-500/30 transition-colors">
+                                                        <div className="pl-4 pr-3 py-4 border-r border-white/5 bg-white/[0.02] flex-shrink-0">
+                                                            <Key className="w-5 h-5 text-gray-500 group-focus-within:text-blue-500 transition-colors" />
+                                                        </div>
+                                                        <input
+                                                            type="text"
+                                                            value={recipient}
+                                                            onChange={(e) => setRecipient(e.target.value)}
+                                                            placeholder="0x..."
+                                                            className="flex-1 min-w-0 bg-transparent border-none py-3 px-4 text-sm text-white font-mono focus:ring-0 placeholder-gray-700"
+                                                            spellCheck={false}
+                                                        />
+                                                        <div className="pr-4 flex items-center gap-2 pointer-events-none">
+                                                            <div className={`h-1.5 w-1.5 rounded-full ${recipient ? 'bg-green-500' : 'bg-red-500'}`}></div>
+                                                            <span className={`text-[10px] font-bold tracking-wider uppercase ${recipient ? 'text-green-500' : 'text-red-500'}`}>
+                                                                {recipient ? 'Verified' : 'Invalid'}
+                                                            </span>
+                                                        </div>
                                                     </div>
                                                 </div>
                                             </div>
 
-                                            {/* Heartbeat Slider */}
-                                            <div className="bg-black/40 border border-white/10 rounded-xl p-6 backdrop-blur-md hover:border-neon-cyan/30 transition-all">
-                                                <h3 className="text-neon-cyan text-xs font-bold tracking-[0.2em] flex items-center gap-2 mb-4">
-                                                    <Clock className="w-4 h-4" />
-                                                    3. HEARTBEAT INTERVAL
-                                                </h3>
-                                                <div className="flex items-center justify-between mb-4 bg-black/20 p-4 rounded-lg border border-white/5">
-                                                    <span className="text-4xl font-mono text-white font-bold tracking-tight">
-                                                        {Math.floor(parseInt(heartbeatInterval) / 1000)}
-                                                        <span className="text-xl text-gray-600 ml-2">SEC</span>
-                                                    </span>
-                                                    <span className="text-xs text-gray-500 uppercase tracking-widest border border-gray-800 px-2 py-1 rounded">Live Mode</span>
-                                                </div>
-                                                <input
-                                                    type="range"
-                                                    min="10000"
-                                                    max="600000"
-                                                    step="1000"
-                                                    value={heartbeatInterval}
-                                                    onChange={(e) => setHeartbeatInterval(e.target.value)}
-                                                    className="w-full h-2 bg-gray-800 rounded-lg appearance-none cursor-pointer accent-neon-cyan hover:accent-neon-cyan/80"
-                                                />
-                                                <div className="flex justify-between text-[10px] text-gray-600 mt-2 font-mono uppercase">
-                                                    <span>10s (Danger)</span>
-                                                    <span>600s (Safe)</span>
-                                                </div>
-                                            </div>
-
-                                            {/* Sentinels Section */}
-                                            <div className="bg-black/40 border border-white/10 rounded-xl p-6 backdrop-blur-md hover:border-neon-cyan/30 transition-all">
-                                                <h3 className="text-neon-cyan text-xs font-bold tracking-[0.2em] flex items-center gap-2 mb-4">
-                                                    <Shield className="w-4 h-4" />
-                                                    4. SENTINELS (OPTIONAL)
-                                                </h3>
-                                                <p className="text-[10px] text-gray-500 mb-4 font-mono">
-                                                    Trusted wallets that receive early warnings before data release.
-                                                </p>
-
-                                                <div className="flex gap-2 mb-4">
-                                                    <input
-                                                        type="text"
-                                                        value={newSentinel}
-                                                        onChange={(e) => setNewSentinel(e.target.value)}
-                                                        placeholder="Add Sentinel Address (0x...)"
-                                                        className="flex-1 bg-black/60 border border-white/10 rounded-lg p-3 font-mono text-xs focus:border-neon-cyan focus:outline-none text-white placeholder-gray-700"
-                                                    />
-                                                    <button
-                                                        onClick={() => {
-                                                            if (newSentinel && !sentinels.includes(newSentinel)) {
-                                                                setSentinels([...sentinels, newSentinel]);
-                                                                setNewSentinel('');
-                                                            }
-                                                        }}
-                                                        className="px-4 py-2 bg-neon-cyan/10 border border-neon-cyan/50 text-neon-cyan rounded-lg hover:bg-neon-cyan hover:text-black transition-all font-bold text-xs"
-                                                    >
-                                                        ADD
-                                                    </button>
-                                                </div>
-
-                                                <div className="space-y-2">
-                                                    {sentinels.map((sentinel, idx) => (
-                                                        <div key={idx} className="flex items-center justify-between bg-black/20 p-2 rounded border border-white/5">
-                                                            <span className="font-mono text-xs text-gray-300 truncate">{sentinel}</span>
-                                                            <button
-                                                                onClick={() => setSentinels(sentinels.filter((_, i) => i !== idx))}
-                                                                className="text-red-500 hover:text-red-400"
-                                                            >
-                                                                <X className="w-3 h-3" />
-                                                            </button>
-                                                        </div>
-                                                    ))}
-                                                    {sentinels.length === 0 && (
-                                                        <div className="text-center text-[10px] text-gray-600 italic py-2">
-                                                            No sentinels added
-                                                        </div>
-                                                    )}
-                                                </div>
-
-                                                <div className="mt-6 pt-4 border-t border-white/5">
-                                                    <div className="flex items-center justify-between mb-2">
-                                                        <span className="text-xs font-mono text-gray-400">WARNING INTERVAL</span>
-                                                        <span className="text-xs font-mono text-neon-cyan">{Math.floor(parseInt(sentinelInterval) / 1000)}s</span>
+                                            {/* Heartbeat & Sentinels Grid */}
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                                {/* Heartbeat */}
+                                                <div className="bg-[#09090b] rounded-2xl p-4 border border-white/5">
+                                                    <h3 className="text-sm font-medium text-gray-300 flex items-center gap-2 mb-4">
+                                                        <Clock className="w-4 h-4 text-blue-500" />
+                                                        Heartbeat
+                                                    </h3>
+                                                    <div className="flex items-end gap-2 mb-4">
+                                                        <span className="text-3xl font-bold text-white">
+                                                            {Math.floor(parseInt(heartbeatInterval) / 1000)}
+                                                        </span>
+                                                        <span className="text-sm text-gray-500 mb-1">seconds</span>
                                                     </div>
                                                     <input
                                                         type="range"
-                                                        min="1000"
-                                                        max={parseInt(heartbeatInterval) - 1000}
+                                                        min="10000"
+                                                        max="600000"
                                                         step="1000"
-                                                        value={sentinelInterval}
-                                                        onChange={(e) => setSentinelInterval(e.target.value)}
-                                                        className="w-full h-1 bg-gray-800 rounded-lg appearance-none cursor-pointer accent-neon-cyan"
+                                                        value={heartbeatInterval}
+                                                        onChange={(e) => setHeartbeatInterval(e.target.value)}
+                                                        className="w-full h-1.5 bg-gray-800 rounded-lg appearance-none cursor-pointer accent-blue-500 hover:accent-blue-400"
                                                     />
-                                                    <p className="text-[9px] text-gray-600 mt-1 font-mono">
-                                                        Time after heartbeat to warn sentinels. Must be less than heartbeat interval.
-                                                    </p>
+                                                </div>
+
+                                                {/* Sentinels */}
+                                                <div className="bg-[#09090b] rounded-2xl p-4 border border-white/5">
+                                                    <h3 className="text-sm font-medium text-gray-300 flex items-center gap-2 mb-4">
+                                                        <Shield className="w-4 h-4 text-blue-500" />
+                                                        Sentinels
+                                                    </h3>
+                                                    <div className="flex gap-2 mb-3">
+                                                        <input
+                                                            type="text"
+                                                            value={newSentinel}
+                                                            onChange={(e) => setNewSentinel(e.target.value)}
+                                                            placeholder="Add 0x..."
+                                                            className="flex-1 bg-[#05060a] border border-white/5 rounded-lg px-3 py-2 text-xs text-white focus:border-blue-500/30 focus:outline-none"
+                                                        />
+                                                        <button
+                                                            onClick={() => {
+                                                                if (newSentinel && !sentinels.includes(newSentinel)) {
+                                                                    setSentinels([...sentinels, newSentinel]);
+                                                                    setNewSentinel('');
+                                                                }
+                                                            }}
+                                                            className="px-3 py-2 bg-blue-500/10 text-blue-500 rounded-lg hover:bg-blue-500 hover:text-white transition-all text-xs font-medium"
+                                                        >
+                                                            Add
+                                                        </button>
+                                                    </div>
+                                                    <div className="space-y-1 max-h-20 overflow-y-auto custom-scrollbar">
+                                                        {sentinels.map((sentinel, idx) => (
+                                                            <div key={idx} className="flex items-center justify-between bg-[#05060a] px-2 py-1.5 rounded border border-white/5">
+                                                                <span className="font-mono text-[10px] text-gray-400 truncate w-24">{sentinel}</span>
+                                                                <button onClick={() => setSentinels(sentinels.filter((_, i) => i !== idx))} className="text-gray-600 hover:text-red-500"><X className="w-3 h-3" /></button>
+                                                            </div>
+                                                        ))}
+                                                        {sentinels.length === 0 && <div className="text-[10px] text-gray-600 italic text-center">No sentinels</div>}
+                                                    </div>
                                                 </div>
                                             </div>
                                         </div>
@@ -578,63 +585,60 @@ export default function VaultInterface() {
                                         <button
                                             onClick={createVault}
                                             disabled={!recipient || (payloadType === 'text' ? !secret : !selectedFile) || isDeploying}
-                                            className="w-full bg-neon-cyan/10 border border-neon-cyan/50 text-neon-cyan hover:bg-neon-cyan hover:text-black hover:shadow-[0_0_30px_rgba(0,243,255,0.3)] font-bold tracking-[0.2em] py-5 rounded-lg transition-all duration-300 flex items-center justify-center gap-3 group mt-4 disabled:opacity-30 disabled:cursor-not-allowed"
+                                            className="w-full bg-gradient-to-r from-blue-600 to-blue-700 text-white hover:from-blue-500 hover:to-blue-600 font-medium py-4 rounded-xl transition-all duration-300 flex items-center justify-center gap-2 shadow-lg shadow-blue-900/20 disabled:opacity-50 disabled:cursor-not-allowed mt-4"
                                         >
                                             {isDeploying ? (
                                                 <>
                                                     <Loader2 className="w-5 h-5 animate-spin" />
-                                                    {statusMessage || 'ENCRYPTING...'}
+                                                    {statusMessage || 'Processing...'}
                                                 </>
                                             ) : (
                                                 <>
                                                     <Shield className="w-5 h-5" />
-                                                    INITIALIZE PROTOCOL
-                                                    <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                                                    Initialize Protocol
                                                 </>
                                             )}
                                         </button>
                                     </div>
 
                                     {/* Right Column: Visualizer & Logs */}
-                                    <div className="bg-black/60 border-l border-white/10 p-6 flex flex-col">
-                                        <div className="text-[10px] text-gray-500 mb-4 tracking-[0.3em]">SIMULATION</div>
+                                    <div className="bg-[#09090b] border border-white/5 rounded-2xl p-6 flex flex-col">
+                                        <div className="flex items-center justify-between mb-6">
+                                            <h3 className="text-sm font-medium text-gray-300">Simulation</h3>
+                                            <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse shadow-[0_0_8px_rgba(34,197,94,0.6)]"></div>
+                                        </div>
 
                                         {/* Visualizer Box */}
-                                        <div className="flex-1 border border-white/5 rounded-lg bg-black relative overflow-hidden mb-4 flex items-center justify-center group min-h-[300px]">
-                                            <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-neon-cyan/20 via-transparent to-transparent opacity-50 group-hover:opacity-100 transition-opacity"></div>
+                                        <div className="flex-1 border border-white/5 rounded-xl bg-[#05060a] relative overflow-hidden mb-6 flex items-center justify-center group min-h-[200px]">
+                                            <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-blue-500/10 via-transparent to-transparent opacity-50"></div>
 
-                                            {/* Rotating Circles FX */}
-                                            <div className="absolute w-48 h-48 border border-neon-cyan/20 rounded-full animate-[spin_10s_linear_infinite]"></div>
-                                            <div className="absolute w-32 h-32 border border-dashed border-neon-cyan/30 rounded-full animate-[spin_5s_linear_infinite_reverse]"></div>
-                                            <div className="absolute w-64 h-64 border border-white/5 rounded-full"></div>
+                                            {/* Clean, minimal circles */}
+                                            <div className="absolute w-32 h-32 border border-blue-500/20 rounded-full animate-[spin_10s_linear_infinite]"></div>
+                                            <div className="absolute w-24 h-24 border border-dashed border-blue-500/30 rounded-full animate-[spin_5s_linear_infinite_reverse]"></div>
 
                                             <div className="text-center z-10">
-                                                <div className="relative inline-block">
-                                                    <Lock className="w-8 h-8 text-neon-cyan mx-auto mb-2" />
-                                                    <div className="absolute -top-1 -right-1 w-2 h-2 bg-neon-cyan rounded-full animate-ping"></div>
-                                                </div>
-                                                <div className="text-xs text-neon-cyan font-mono font-bold">ENCRYPTION: SEAL</div>
-                                                <div className="text-[10px] text-gray-600 mt-1">
-                                                    {isDeploying ? 'PROCESSING...' : 'KEY SHARDING PENDING'}
-                                                </div>
+                                                <Lock className="w-8 h-8 text-blue-500 mx-auto mb-3" />
+                                                <div className="text-xs text-blue-400 font-medium tracking-wide">SEAL ENCRYPTION</div>
+                                                <div className="text-[10px] text-gray-600 mt-1">Ready to secure</div>
                                             </div>
                                         </div>
+
                                         {/* Logs */}
-                                        <div className="h-48 bg-[#0a0a0a] border border-white/10 rounded p-4 font-mono text-xs space-y-2 overflow-y-auto">
-                                            <div className="text-green-500/80 border-l-2 border-green-900 pl-2">
-                                                &gt; System ready.
+                                        <div className="h-48 bg-[#05060a] border border-white/5 rounded-xl p-4 font-mono text-[10px] space-y-2 overflow-y-auto text-gray-400">
+                                            <div className="flex gap-2">
+                                                <span className="text-blue-500">➜</span>
+                                                <span>System initialized.</span>
                                             </div>
                                             {isDeploying && (
-                                                <>
-                                                    <div className="text-green-500/80 border-l-2 border-green-900 pl-2">
-                                                        &gt; {statusMessage}
-                                                    </div>
-                                                    <div className="animate-pulse text-green-500 pl-2">_</div>
-                                                </>
+                                                <div className="flex gap-2">
+                                                    <span className="text-blue-500">➜</span>
+                                                    <span className="text-white">{statusMessage}</span>
+                                                </div>
                                             )}
                                             {!isDeploying && (
-                                                <div className="text-green-500/80 border-l-2 border-green-900 pl-2">
-                                                    &gt; Waiting for user input...
+                                                <div className="flex gap-2 opacity-50">
+                                                    <span className="text-gray-600">➜</span>
+                                                    <span>Waiting for input...</span>
                                                 </div>
                                             )}
                                         </div>
