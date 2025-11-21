@@ -1,11 +1,21 @@
 import { motion } from 'framer-motion';
 import { ArrowRight } from 'lucide-react';
 import { useCurrentAccount } from '@mysten/dapp-kit';
+import logo from '../assets/logo.png';
 
 export default function Hero() {
     const account = useCurrentAccount();
     return (
         <section className="relative min-h-screen flex flex-col justify-center items-center text-center px-4 pt-20">
+            <motion.div
+                initial={{ opacity: 0, scale: 0.8 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ duration: 0.8 }}
+                className="mb-10"
+            >
+                <img src={logo} alt="Chronos Logo" className="w-40 h-40 md:w-64 md:h-64 object-contain drop-shadow-[0_0_25px_rgba(0,243,255,0.6)]" />
+            </motion.div>
+
             <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}

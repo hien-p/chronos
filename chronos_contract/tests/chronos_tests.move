@@ -1,10 +1,9 @@
 #[test_only]
 module chronos_contract::chronos_tests;
 
-use chronos_contract::chronos::{Self, Vault, ReleaseEvent};
-use sui::clock::{Self, Clock};
+use chronos_contract::chronos::{Self, Vault};
+use sui::clock::{Self};
 use sui::test_scenario::{Self, Scenario};
-use sui::test_utils::assert_eq;
 
 // Test helpers
 fun scenario(): Scenario {
@@ -20,12 +19,14 @@ fun test_flow() {
     // 1. Create Vault
     test_scenario::next_tx(&mut scenario, owner);
     {
-        let mut clock = clock::create_for_testing(test_scenario::ctx(&mut scenario));
+        let clock = clock::create_for_testing(test_scenario::ctx(&mut scenario));
         chronos::create_vault(
             recipient,
             std::string::utf8(b"test_blob_id"),
             b"test_encrypted_key",
             interval,
+            interval - 100, // sentinel_interval
+            vector::empty(), // sentinels
             &clock,
             test_scenario::ctx(&mut scenario)
         );

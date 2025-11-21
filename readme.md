@@ -41,6 +41,8 @@ To achieve this, Chronos separates its system into three decentralized layers:
 
 * The Pulse (Sui Smart Contracts): This layer ensures the user is still active. A `Liveness` object is created on the Sui blockchain. The user must periodically send a heartbeat transaction (a simple check-in). If the user fails to send a heartbeat for a set period, the `Liveness` object is destroyed.  ( “Are you still here?” mechanism)
 
+* The Sentinels (Guardians): Users can designate trusted wallets (relatives, lawyers) to receive an early warning before the data is released to the public. This provides a grace period for trusted parties to intervene or prepare.
+
 * The Trigger: If the heartbeat stops, the Sui contract changes the global state. This state change authorizes the `Threshold Network` to reconstruct the decryption key and publish it to the intended recipient.
 
 

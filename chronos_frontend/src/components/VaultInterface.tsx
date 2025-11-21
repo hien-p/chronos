@@ -27,6 +27,9 @@ export default function VaultInterface() {
     const [payloadType, setPayloadType] = useState<'text' | 'file'>('text');
     const [selectedFile, setSelectedFile] = useState<File | null>(null);
     const [heartbeatInterval, setHeartbeatInterval] = useState('600000');
+    const [sentinels, setSentinels] = useState<string[]>([]);
+    const [newSentinel, setNewSentinel] = useState('');
+    const [sentinelInterval, setSentinelInterval] = useState('300000'); // Default 5 mins (half of default heartbeat)
     // const [lastCreatedId, setLastCreatedId] = useState<string | null>(null); // Removed as unused in new UI
     const [isDeploying, setIsDeploying] = useState(false);
     const [statusMessage, setStatusMessage] = useState('');
@@ -114,6 +117,8 @@ export default function VaultInterface() {
                     tx.pure.string(blobId),
                     tx.pure.vector('u8', Array.from(policyIdBytes)),
                     tx.pure.u64(BigInt(heartbeatInterval)),
+                    tx.pure.u64(BigInt(sentinelInterval)),
+                    tx.pure.vector('address', sentinels),
                     tx.object('0x6'),
                 ],
             });
@@ -496,6 +501,76 @@ export default function VaultInterface() {
                                                 <div className="flex justify-between text-[10px] text-gray-600 mt-2 font-mono uppercase">
                                                     <span>10s (Danger)</span>
                                                     <span>600s (Safe)</span>
+                                                </div>
+                                            </div>
+
+                                            {/* Sentinels Section */}
+                                            <div className="bg-black/40 border border-white/10 rounded-xl p-6 backdrop-blur-md hover:border-neon-cyan/30 transition-all">
+                                                <h3 className="text-neon-cyan text-xs font-bold tracking-[0.2em] flex items-center gap-2 mb-4">
+                                                    <Shield className="w-4 h-4" />
+                                                    4. SENTINELS (OPTIONAL)
+                                                </h3>
+                                                <p className="text-[10px] text-gray-500 mb-4 font-mono">
+                                                    Trusted wallets that receive early warnings before data release.
+                                                </p>
+
+                                                <div className="flex gap-2 mb-4">
+                                                    <input
+                                                        type="text"
+                                                        value={newSentinel}
+                                                        onChange={(e) => setNewSentinel(e.target.value)}
+                                                        placeholder="Add Sentinel Address (0x...)"
+                                                        className="flex-1 bg-black/60 border border-white/10 rounded-lg p-3 font-mono text-xs focus:border-neon-cyan focus:outline-none text-white placeholder-gray-700"
+                                                    />
+                                                    <button
+                                                        onClick={() => {
+                                                            if (newSentinel && !sentinels.includes(newSentinel)) {
+                                                                setSentinels([...sentinels, newSentinel]);
+                                                                setNewSentinel('');
+                                                            }
+                                                        }}
+                                                        className="px-4 py-2 bg-neon-cyan/10 border border-neon-cyan/50 text-neon-cyan rounded-lg hover:bg-neon-cyan hover:text-black transition-all font-bold text-xs"
+                                                    >
+                                                        ADD
+                                                    </button>
+                                                </div>
+
+                                                <div className="space-y-2">
+                                                    {sentinels.map((sentinel, idx) => (
+                                                        <div key={idx} className="flex items-center justify-between bg-black/20 p-2 rounded border border-white/5">
+                                                            <span className="font-mono text-xs text-gray-300 truncate">{sentinel}</span>
+                                                            <button
+                                                                onClick={() => setSentinels(sentinels.filter((_, i) => i !== idx))}
+                                                                className="text-red-500 hover:text-red-400"
+                                                            >
+                                                                <X className="w-3 h-3" />
+                                                            </button>
+                                                        </div>
+                                                    ))}
+                                                    {sentinels.length === 0 && (
+                                                        <div className="text-center text-[10px] text-gray-600 italic py-2">
+                                                            No sentinels added
+                                                        </div>
+                                                    )}
+                                                </div>
+
+                                                <div className="mt-6 pt-4 border-t border-white/5">
+                                                    <div className="flex items-center justify-between mb-2">
+                                                        <span className="text-xs font-mono text-gray-400">WARNING INTERVAL</span>
+                                                        <span className="text-xs font-mono text-neon-cyan">{Math.floor(parseInt(sentinelInterval) / 1000)}s</span>
+                                                    </div>
+                                                    <input
+                                                        type="range"
+                                                        min="1000"
+                                                        max={parseInt(heartbeatInterval) - 1000}
+                                                        step="1000"
+                                                        value={sentinelInterval}
+                                                        onChange={(e) => setSentinelInterval(e.target.value)}
+                                                        className="w-full h-1 bg-gray-800 rounded-lg appearance-none cursor-pointer accent-neon-cyan"
+                                                    />
+                                                    <p className="text-[9px] text-gray-600 mt-1 font-mono">
+                                                        Time after heartbeat to warn sentinels. Must be less than heartbeat interval.
+                                                    </p>
                                                 </div>
                                             </div>
                                         </div>
