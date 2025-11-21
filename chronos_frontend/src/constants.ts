@@ -1,1 +1,1 @@
-export const PACKAGE_ID = '0xf06a4ba0f4dcc699aa9587408b1edcae15832fb71e30484464de013045e09b75';
+export const PACKAGE_ID = '0x483f44e56c0e56d6feb81733b6c406fbf9bbace8f68e75d3d2b5e409e95cd852';

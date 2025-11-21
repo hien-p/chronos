@@ -59,7 +59,7 @@ public struct Vault has key, store {
 // === Public Functions ===
 
 /// Create a new Vault with a specified heartbeat interval and recipient.
-public fun create_vault(
+public entry fun create_vault(
     recipient: address,
     blob_id: String,
     encrypted_key: vector<u8>,
