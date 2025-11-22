@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion';
-import { Lock, Database } from 'lucide-react';
+import { Lock } from 'lucide-react';
 import { useState, useEffect } from 'react';
 
 interface WalrusShatterProps {

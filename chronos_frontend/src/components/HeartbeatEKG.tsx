@@ -14,7 +14,7 @@ export const HeartbeatEKG = ({ status }: HeartbeatEKGProps) => {
         if (!ctx) return;
 
         let animationFrameId: number;
-        let x = 0;
+
         const points: number[] = [];
         const width = canvas.width;
         const height = canvas.height;

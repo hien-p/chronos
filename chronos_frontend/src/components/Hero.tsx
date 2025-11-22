@@ -61,7 +61,7 @@ export default function Hero() {
             >
                 <a
                     href="#vaults"
-                    onClick={(e) => {
+                    onClick={() => {
                         if (!account) {
                             // If not connected, we still let it scroll (since we added the ID to the access denied section),
                             // but we also show an alert to guide the user.
