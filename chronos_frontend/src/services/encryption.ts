@@ -1,6 +1,5 @@
-import { SealClient, SessionKey, EncryptedObject } from '@mysten/seal';
+import { SealClient, SessionKey } from '@mysten/seal';
 import { SuiClient, getFullnodeUrl } from '@mysten/sui/client';
-import { fromHEX } from '@mysten/bcs';
 
 // Testnet Key Servers (from docs)
 // NOTE: These only work if the contract is deployed on Testnet.
@@ -14,8 +13,7 @@ export const EncryptionService = {
      * Encrypts data using SEAL.
      */
     async encrypt(data: string | Uint8Array, policyId: string, packageId: string): Promise<Uint8Array> {
-        console.log('EncryptionService.encrypt called with:', { dataLength: data.length, policyId, packageId });
-        console.log('Types:', { policyIdType: typeof policyId, packageIdType: typeof packageId });
+
 
         // Default to Testnet for SEAL interaction (Localnet won't work with real SEAL nodes)
         const suiClient = new SuiClient({ url: getFullnodeUrl('testnet') });

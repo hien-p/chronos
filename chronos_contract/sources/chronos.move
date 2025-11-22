@@ -26,6 +26,7 @@ public struct VaultCreated has copy, drop {
     creator: address,
     recipient: address,
     blob_id: String,
+    sentinels: vector<address>,
 }
 
 /// Emitted when the vault is triggered and data is released.
@@ -90,6 +91,7 @@ public entry fun create_vault(
         creator: owner,
         recipient,
         blob_id: vault.blob_id,
+        sentinels: vault.sentinels,
     });
 
     transfer::share_object(vault);
@@ -134,7 +136,7 @@ public fun trigger_sentinel_warning(vault: &Vault, clock: &Clock) {
 
 /// SEAL Access Control Function
 /// Checks if the vault is expired and the provided ID matches.
-public fun seal_approve(vault: &Vault, id: vector<u8>, clock: &Clock) {
+public entry fun seal_approve(id: vector<u8>, vault: &Vault, clock: &Clock) {
     // 1. Verify the ID matches the one stored in the vault
     assert!(vault.encrypted_key == id, ENotOwner); // Reusing ENotOwner as generic auth error or add new error
     

@@ -3,7 +3,7 @@ import { useCurrentAccount, useSignAndExecuteTransaction, useSuiClientQuery, use
 import { Transaction } from '@mysten/sui/transactions';
 import { PACKAGE_ID } from '../constants';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Plus, RefreshCw, Loader2, Upload, Lock, User, Clock, Shield, Key, FileText, X, Activity, Download, Settings } from 'lucide-react';
+import { Plus, RefreshCw, Loader2, Upload, Lock, User, Clock, Shield, Key, FileText, X, Activity, Download, Settings, Unlock } from 'lucide-react';
 import clsx from 'clsx';
 import { WalrusService } from '../services/walrus';
 import { EncryptionService } from '../services/encryption';
@@ -12,7 +12,7 @@ import { HeartbeatEKG } from './HeartbeatEKG';
 import { WalrusShatter } from './WalrusShatter';
 import { SessionKey } from '@mysten/seal';
 import { SuiClient, getFullnodeUrl } from '@mysten/sui/client';
-import { fromHEX } from '@mysten/bcs';
+import { normalizeSuiAddress } from '@mysten/sui/utils';
 
 export default function VaultInterface() {
     const account = useCurrentAccount();
@@ -61,12 +61,23 @@ export default function VaultInterface() {
 
     const { data: myVaults, refetch: refetchMyVaults } = useSuiClientQuery('multiGetObjects', {
         ids: myVaultIds,
-        options: { showContent: true }
+        options: { showContent: true, showType: true }
     });
+
+    const filteredMyVaults = myVaults?.filter(v => v.data?.type?.startsWith(PACKAGE_ID));
 
     // Event Query State - Incoming (Recipient) Vaults
     const incomingVaultIds = vaultEvents?.data
-        .filter((event) => (event.parsedJson as any)?.recipient === account?.address)
+        .filter((event) => {
+            const json = event.parsedJson as any;
+            const isRecipient = json?.recipient === account?.address;
+            // Check if user is in the sentinels list (if it exists)
+            const normalizedMyAddress = account?.address ? normalizeSuiAddress(account.address) : '';
+            const normalizedSentinels = json?.sentinels?.map((s: string) => normalizeSuiAddress(s)) || [];
+            const isSentinel = normalizedSentinels.includes(normalizedMyAddress);
+
+            return isRecipient || isSentinel;
+        })
         .map((event) => {
             const json = event.parsedJson as any;
             const idRaw = json?.id || json?.vault_id;
@@ -79,6 +90,35 @@ export default function VaultInterface() {
         { ids: incomingVaultIds, options: { showContent: true, showType: true } },
         { enabled: incomingVaultIds.length > 0 }
     );
+
+    const filteredIncomingVaults = incomingVaults?.filter(v => v.data?.type?.startsWith(PACKAGE_ID));
+
+    const fillDemoSimple = () => {
+        setRecipient(account?.address || '');
+        setSecret('This is a simple demo secret for the vault.');
+        setHeartbeatInterval('60000'); // 1 minute
+        setSentinelInterval('300000'); // 5 mins default
+        setSentinels([]);
+        setNotification({ message: 'Demo Preset: Simple (No Sentinels) Loaded', type: 'success' });
+        setTimeout(() => setNotification(null), 3000);
+    };
+
+    const fillDemoProtected = () => {
+        setRecipient(account?.address || '');
+        setSecret('This is a protected demo secret with sentinels.');
+        setHeartbeatInterval('60000'); // 1 minute
+        setSentinelInterval('30000'); // 30 seconds for demo
+        // Add current user as sentinel for immediate verification
+        const demoSentinels = ['0x0000000000000000000000000000000000000000000000000000000000000000'];
+        if (account?.address) {
+            demoSentinels.push(account.address);
+        }
+        setSentinels(demoSentinels);
+        setNotification({ message: 'Demo Preset: Protected (You are now a Sentinel)', type: 'success' });
+        setTimeout(() => setNotification(null), 3000);
+    };
+
+
 
     const createVault = async () => {
         if (!account) return;
@@ -108,6 +148,7 @@ export default function VaultInterface() {
             const policyIdBytes = new Uint8Array(policyId.match(/.{1,2}/g)!.map(byte => parseInt(byte, 16)));
 
             setStatusMessage('Signing Transaction...');
+
             const tx = new Transaction();
 
             tx.moveCall({
@@ -126,7 +167,7 @@ export default function VaultInterface() {
             signAndExecute(
                 { transaction: tx },
                 {
-                    onSuccess: (result) => {
+                    onSuccess: () => {
                         setStatusMessage('Vault Deployed Successfully!');
                         setActiveTab('manage'); // Auto-switch to Active Nodes
 
@@ -194,8 +235,12 @@ export default function VaultInterface() {
 
     const decryptVault = async (vaultId: string) => {
         try {
+            if (!account) {
+                alert('Please connect your wallet first');
+                return;
+            }
             setIsDecrypting(true);
-            const vault = incomingVaults?.find(v => v.data?.objectId === vaultId);
+            const vault = filteredIncomingVaults?.find(v => v.data?.objectId === vaultId);
             if (!vault) {
                 alert('Vault not found');
                 return;
@@ -213,7 +258,23 @@ export default function VaultInterface() {
             const encryptedBytes = new Uint8Array(encryptedArrayBuffer);
 
             // 2. Get Policy ID (stored in encrypted_key field)
-            const policyIdBytes = new Uint8Array(fields.encrypted_key);
+
+
+            let policyIdBytes: Uint8Array;
+            if (Array.isArray(fields.encrypted_key)) {
+                policyIdBytes = new Uint8Array(fields.encrypted_key);
+            } else if (typeof fields.encrypted_key === 'string') {
+                // Handle hex string (with or without 0x) or base64? 
+                // Usually Move vector<u8> comes as string if it's valid utf8, but our key is hex.
+                // If it starts with 0x, it's hex.
+                const hex = fields.encrypted_key.startsWith('0x') ? fields.encrypted_key.slice(2) : fields.encrypted_key;
+                policyIdBytes = new Uint8Array(hex.match(/.{1,2}/g)?.map((byte: string) => parseInt(byte, 16)) || []);
+            } else {
+                console.error('Unknown key format');
+                alert('Unknown key format');
+                return;
+            }
+
 
             // 3. Create Session Key
             // setStatusMessage('Initializing Secure Session...'); // setStatusMessage is not available in this scope? It is.
@@ -221,7 +282,7 @@ export default function VaultInterface() {
 
             const sessionKey = await SessionKey.create({
                 address: account!.address,
-                packageId: fromHEX(PACKAGE_ID),
+                packageId: PACKAGE_ID,
                 ttlMin: 10,
                 suiClient: new SuiClient({ url: getFullnodeUrl('testnet') })
             });
@@ -229,21 +290,74 @@ export default function VaultInterface() {
             // 4. Sign Session Request
             // setStatusMessage('Awaiting Biometric Auth...');
             const message = sessionKey.getPersonalMessage();
-            const { signature } = await signPersonalMessage({ message: new TextEncoder().encode(message) });
+            const { signature } = await signPersonalMessage({ message: message });
             sessionKey.setPersonalMessageSignature(signature);
 
             // 5. Build Transaction for SEAL Approval
             // setStatusMessage('Verifying Access Control...');
+
             const tx = new Transaction();
+            tx.setSender(account.address);
+
+            // Fetch object details to get the initial shared version
+            const vaultObj = await new SuiClient({ url: getFullnodeUrl('testnet') }).getObject({
+                id: vaultId,
+                options: { showOwner: true }
+            });
+
+            const initialSharedVersion = (vaultObj.data?.owner as any)?.Shared?.initial_shared_version;
+
+
+            if (!initialSharedVersion) {
+                console.error('Could not fetch initial shared version');
+                alert('Error: Could not fetch vault version');
+                return;
+            }
+
             tx.moveCall({
                 target: `${PACKAGE_ID}::chronos::seal_approve`,
                 arguments: [
-                    tx.object(vaultId),
                     tx.pure.vector('u8', Array.from(policyIdBytes)),
+                    tx.object(vaultId),
                     tx.object('0x6')
                 ]
             });
-            const txBytes = await tx.build({ client: new SuiClient({ url: getFullnodeUrl('testnet') }) });
+
+
+
+            // Debug: Dry Run to verify transaction validity on-chain
+            try {
+                // Build full transaction for dry run
+                tx.setSender(account.address);
+                const dryRunTxBytes = await tx.build({ client: new SuiClient({ url: getFullnodeUrl('testnet') }) });
+                const dryRunResult = await new SuiClient({ url: getFullnodeUrl('testnet') }).dryRunTransactionBlock({ transactionBlock: dryRunTxBytes });
+
+
+                if (dryRunResult.effects.status.status === 'failure') {
+                    console.error('Dry Run Failed:', dryRunResult.effects.status.error);
+                    alert(`Dry Run Failed: ${dryRunResult.effects.status.error}`);
+                    return;
+                }
+            } catch (e) {
+                console.error('Dry Run Error:', e);
+            }
+
+            // Build PTB for SEAL (no sender, only kind)
+            const txForSeal = new Transaction();
+            txForSeal.moveCall({
+                target: `${PACKAGE_ID}::chronos::seal_approve`,
+                arguments: [
+                    txForSeal.pure.vector('u8', Array.from(policyIdBytes)),
+                    txForSeal.object(vaultId), // Let builder resolve shared object
+                    txForSeal.object('0x6')
+                ]
+            });
+
+            const txBytes = await txForSeal.build({
+                client: new SuiClient({ url: getFullnodeUrl('testnet') }),
+                onlyTransactionKind: true
+            });
+
 
             // 6. Decrypt
             // setStatusMessage('Decrypting Payload...');
@@ -402,7 +516,23 @@ export default function VaultInterface() {
                                 className="h-full flex flex-col"
                             >
                                 <div className="flex items-center justify-between mb-8">
-                                    <h2 className="text-2xl font-semibold text-white">Initialize Protocol</h2>
+                                    <div className="flex justify-between items-center w-full">
+                                        <h2 className="font-mono text-2xl font-bold text-white tracking-wider">Initialize Protocol</h2>
+                                        <div className="flex gap-2">
+                                            <button
+                                                onClick={fillDemoSimple}
+                                                className="px-3 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 border border-white/5 text-[10px] font-mono text-gray-400 hover:text-white transition-colors"
+                                            >
+                                                DEMO: SIMPLE
+                                            </button>
+                                            <button
+                                                onClick={fillDemoProtected}
+                                                className="px-3 py-1.5 rounded-lg bg-blue-500/10 hover:bg-blue-500/20 border border-blue-500/20 text-[10px] font-mono text-blue-400 hover:text-blue-300 transition-colors"
+                                            >
+                                                DEMO: PROTECTED
+                                            </button>
+                                        </div>
+                                    </div>
                                     <div className="flex gap-2">
                                         <button className="p-2 text-gray-400 hover:text-white transition-colors"><RefreshCw className="w-5 h-5" /></button>
                                         <button className="p-2 text-gray-400 hover:text-white transition-colors"><User className="w-5 h-5" /></button>
@@ -660,7 +790,7 @@ export default function VaultInterface() {
                                 </div>
 
                                 <div className="grid grid-cols-1 gap-6 max-h-[700px] overflow-y-auto pr-4 custom-scrollbar">
-                                    {myVaults?.map((obj) => {
+                                    {filteredMyVaults?.map((obj) => {
                                         const content = obj.data?.content as any;
                                         const fields = content?.fields;
                                         if (!fields) return null;
@@ -759,7 +889,7 @@ export default function VaultInterface() {
                                 </div>
 
                                 <div className="grid grid-cols-1 gap-6 max-h-[700px] overflow-y-auto pr-4 custom-scrollbar">
-                                    {incomingVaults?.map((obj) => {
+                                    {filteredIncomingVaults?.map((obj) => {
                                         const content = obj.data?.content as any;
                                         const fields = content?.fields;
                                         if (!fields) return null;
@@ -776,6 +906,18 @@ export default function VaultInterface() {
                                                         <div className="flex items-center gap-3 mb-4">
                                                             <div className={clsx("w-3 h-3 rounded-full shadow-[0_0_10px_currentColor]", isExpired ? "bg-neon-cyan text-neon-cyan" : "bg-neon-amber text-neon-amber")} />
                                                             <span className="font-mono text-sm text-gray-400 tracking-widest">FROM: {fields.owner.slice(0, 6)}...{fields.owner.slice(-4)}</span>
+                                                            {(() => {
+                                                                const normalizedMyAddress = account?.address ? normalizeSuiAddress(account.address) : '';
+                                                                const normalizedSentinels = fields.sentinels?.map((s: string) => normalizeSuiAddress(s)) || [];
+                                                                const isSentinel = normalizedSentinels.includes(normalizedMyAddress);
+                                                                return isSentinel ? (
+                                                                    <div className="ml-auto bg-yellow-500/20 text-yellow-500 text-[10px] font-bold px-2 py-1 rounded border border-yellow-500/20 flex items-center gap-1">
+                                                                        <Shield className="w-3 h-3" />
+                                                                        SENTINEL WATCH
+                                                                    </div>
+                                                                ) : null;
+                                                            })()}
+
                                                         </div>
 
                                                         <div className="mb-4">
@@ -797,19 +939,43 @@ export default function VaultInterface() {
                                                         </div>
                                                     </div>
 
-                                                    <div className="w-full md:w-64">
+                                                    <div className="w-full md:w-64 flex flex-col gap-2">
                                                         {isExpired ? (
-                                                            <button
-                                                                onClick={() => decryptVault(obj.data?.objectId!)}
-                                                                disabled={isDecrypting}
-                                                                className="w-full py-4 bg-neon-cyan/10 border border-neon-cyan text-neon-cyan font-bold font-mono tracking-widest rounded-xl hover:bg-neon-cyan hover:text-black transition-all disabled:opacity-50"
-                                                            >
-                                                                {isDecrypting ? <Loader2 className="w-5 h-5 animate-spin inline" /> : 'DECRYPT & VIEW'}
-                                                            </button>
+                                                            <>
+                                                                <button
+                                                                    onClick={() => decryptVault(obj.data?.objectId!)}
+                                                                    disabled={isDecrypting}
+                                                                    className="w-full px-4 py-2 bg-transparent border border-white/20 rounded-lg text-xs font-mono text-white hover:bg-white/10 transition-all uppercase tracking-wider flex items-center justify-center gap-2"
+                                                                >
+                                                                    {isDecrypting ? <Loader2 className="w-3 h-3 animate-spin" /> : <Unlock className="w-3 h-3" />}
+                                                                    Decrypt & View
+                                                                </button>
+                                                            </>
                                                         ) : (
-                                                            <div className="w-full py-4 bg-neon-amber/5 border border-neon-amber/20 text-neon-amber/50 font-bold font-mono tracking-widest rounded-xl text-center cursor-not-allowed">
-                                                                AWAITING RELEASE
-                                                            </div>
+                                                            <>
+                                                                {(() => {
+                                                                    // Check for Sentinel Warning
+                                                                    const sentinelInterval = Number(fields.sentinel_interval);
+                                                                    // Warning starts at: lastHeartbeat + sentinelInterval
+                                                                    // Warning ends at: lastHeartbeat + interval (Release Time)
+                                                                    const warningTime = lastHeartbeat + sentinelInterval;
+                                                                    const isWarning = Date.now() > warningTime && Date.now() < releaseTime;
+
+                                                                    if (isWarning) {
+                                                                        return (
+                                                                            <div className="w-full py-4 bg-neon-red/10 border border-neon-red animate-pulse text-neon-red font-bold font-mono tracking-widest rounded-xl text-center flex flex-col items-center justify-center gap-1">
+                                                                                <span className="text-xs">WARNING</span>
+                                                                                <span className="text-[10px]">CHECK-IN REQUIRED</span>
+                                                                            </div>
+                                                                        );
+                                                                    }
+                                                                    return (
+                                                                        <div className="w-full py-4 bg-neon-amber/5 border border-neon-amber/20 text-neon-amber/50 font-bold font-mono tracking-widest rounded-xl text-center cursor-not-allowed">
+                                                                            AWAITING RELEASE
+                                                                        </div>
+                                                                    );
+                                                                })()}
+                                                            </>
                                                         )}
                                                     </div>
                                                 </div>

@@ -1,4 +1,3 @@
-
 // Walrus Aggregator Endpoints (Testnet)
 const PUBLISHER_URL = 'https://publisher.walrus-testnet.walrus.space';
 const AGGREGATOR_URL = 'https://aggregator.walrus-testnet.walrus.space';
@@ -11,7 +10,7 @@ export const WalrusService = {
      */
     async uploadBlob(data: Uint8Array): Promise<string> {
         try {
-            const response = await fetch(`${PUBLISHER_URL}/v1/blobs`, {
+            const response = await fetch(`${PUBLISHER_URL}/v1/blobs?epochs=5`, {
                 method: 'PUT',
                 body: data as unknown as BodyInit,
             });
@@ -44,12 +43,16 @@ export const WalrusService = {
      */
     async readBlob(blobId: string): Promise<Uint8Array> {
         try {
-            const response = await fetch(`${AGGREGATOR_URL}/v1/${blobId}`, {
+
+            // Correct path is /v1/blobs/<blob_id>
+            const response = await fetch(`${AGGREGATOR_URL}/v1/blobs/${blobId}`, {
                 method: 'GET',
             });
 
             if (!response.ok) {
-                throw new Error(`Walrus Read Failed: ${response.statusText}`);
+
+                console.error(`Walrus Read Error: ${response.status} ${response.statusText}`);
+                throw new Error(`Walrus Read Failed: ${response.statusText} (${response.status})`);
             }
 
             const arrayBuffer = await response.arrayBuffer();
