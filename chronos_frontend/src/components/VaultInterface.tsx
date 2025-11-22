@@ -1,9 +1,10 @@
+```
 import { useState } from 'react';
 import { useCurrentAccount, useSignAndExecuteTransaction, useSuiClientQuery, useSignPersonalMessage, ConnectButton } from '@mysten/dapp-kit';
 import { Transaction } from '@mysten/sui/transactions';
 import { PACKAGE_ID } from '../constants';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Plus, RefreshCw, Loader2, Upload, Lock, User, Clock, Shield, Key, FileText, X, Activity, Download, Settings, Unlock } from 'lucide-react';
+import { Plus, Activity, Radio, Shield, Skull, Clock, Upload, Eye, Lock, Unlock, AlertTriangle, CheckCircle2, Loader2, Download } from 'lucide-react';
 import clsx from 'clsx';
 import { WalrusService } from '../services/walrus';
 import { EncryptionService } from '../services/encryption';
@@ -35,7 +36,7 @@ export default function VaultInterface() {
     const [statusMessage, setStatusMessage] = useState('');
 
     // Decrypt Modal State
-    const [decryptedSecret, setDecryptedSecret] = useState<string | null>(null);
+    const [decryptedSecret, setDecryptedSecret] = useState<string | Blob | null>(null);
     const [isDecrypting, setIsDecrypting] = useState(false);
 
     // Notification State
@@ -152,7 +153,7 @@ export default function VaultInterface() {
             const tx = new Transaction();
 
             tx.moveCall({
-                target: `${PACKAGE_ID}::chronos::create_vault`,
+                target: `${ PACKAGE_ID }:: chronos:: create_vault`,
                 arguments: [
                     tx.pure.address(recipient),
                     tx.pure.string(blobId),
@@ -183,7 +184,7 @@ export default function VaultInterface() {
                         setIsDeploying(false);
                     },
                     onError: (err) => {
-                        alert(`Transaction Failed: ${err.message}`);
+                        alert(`Transaction Failed: ${ err.message } `);
                         setIsDeploying(false);
                         setStatusMessage('');
                     }
@@ -191,7 +192,7 @@ export default function VaultInterface() {
             );
         } catch (error: any) {
             console.error('Deployment Error:', error);
-            alert(`Deployment Failed: ${error.message || JSON.stringify(error)}`);
+            alert(`Deployment Failed: ${ error.message || JSON.stringify(error) } `);
             setIsDeploying(false);
             setStatusMessage('');
         }
@@ -200,7 +201,7 @@ export default function VaultInterface() {
     const sendHeartbeat = (vaultId: string) => {
         const tx = new Transaction();
         tx.moveCall({
-            target: `${PACKAGE_ID}::chronos::keep_alive`,
+            target: `${ PACKAGE_ID }:: chronos:: keep_alive`,
             arguments: [tx.object(vaultId), tx.object('0x6')],
         });
         signAndExecute({ transaction: tx }, { onSuccess: () => { alert('Heartbeat Sent!'); refetchMyVaults(); } });
@@ -209,7 +210,7 @@ export default function VaultInterface() {
     const triggerRelease = (vaultId: string) => {
         const tx = new Transaction();
         tx.moveCall({
-            target: `${PACKAGE_ID}::chronos::trigger_release`,
+            target: `${ PACKAGE_ID }:: chronos:: trigger_release`,
             arguments: [tx.object(vaultId), tx.object('0x6')],
         });
         signAndExecute(
@@ -226,7 +227,7 @@ export default function VaultInterface() {
                     }, 2000);
                 },
                 onError: (err) => {
-                    setNotification({ message: `Release Failed: ${err.message}`, type: 'error' });
+                    setNotification({ message: `Release Failed: ${ err.message } `, type: 'error' });
                     setTimeout(() => setNotification(null), 5000);
                 }
             }
@@ -315,7 +316,7 @@ export default function VaultInterface() {
             }
 
             tx.moveCall({
-                target: `${PACKAGE_ID}::chronos::seal_approve`,
+                target: `${ PACKAGE_ID }:: chronos:: seal_approve`,
                 arguments: [
                     tx.pure.vector('u8', Array.from(policyIdBytes)),
                     tx.object(vaultId),
@@ -335,7 +336,7 @@ export default function VaultInterface() {
 
                 if (dryRunResult.effects.status.status === 'failure') {
                     console.error('Dry Run Failed:', dryRunResult.effects.status.error);
-                    alert(`Dry Run Failed: ${dryRunResult.effects.status.error}`);
+                    alert(`Dry Run Failed: ${ dryRunResult.effects.status.error } `);
                     return;
                 }
             } catch (e) {
@@ -345,7 +346,7 @@ export default function VaultInterface() {
             // Build PTB for SEAL (no sender, only kind)
             const txForSeal = new Transaction();
             txForSeal.moveCall({
-                target: `${PACKAGE_ID}::chronos::seal_approve`,
+                target: `${ PACKAGE_ID }:: chronos:: seal_approve`,
                 arguments: [
                     txForSeal.pure.vector('u8', Array.from(policyIdBytes)),
                     txForSeal.object(vaultId), // Let builder resolve shared object
@@ -361,13 +362,23 @@ export default function VaultInterface() {
 
             // 6. Decrypt
             // setStatusMessage('Decrypting Payload...');
-            const decrypted = await EncryptionService.decrypt(encryptedBytes, sessionKey, txBytes);
+            const decryptedBytes = await EncryptionService.decrypt(encryptedBytes, sessionKey, txBytes);
 
-            setDecryptedSecret(decrypted);
+            // Check for PDF Magic Bytes (%PDF)
+            const isPdf = decryptedBytes[0] === 0x25 && decryptedBytes[1] === 0x50 && decryptedBytes[2] === 0x44 && decryptedBytes[3] === 0x46;
+
+            let content: string | Blob;
+            if (isPdf) {
+                content = new Blob([decryptedBytes], { type: 'application/pdf' });
+            } else {
+                content = new TextDecoder().decode(decryptedBytes);
+            }
+
+            setDecryptedSecret(content);
             setIsDecrypting(false);
         } catch (error: any) {
             console.error('Decryption failed:', error);
-            alert(`Decryption failed: ${error.message}`);
+            alert(`Decryption failed: ${ error.message } `);
             setIsDecrypting(false);
         }
     };
@@ -470,7 +481,7 @@ export default function VaultInterface() {
                         <div className="space-y-1">
                             {[1, 2, 3].map((_, i) => (
                                 <div key={i} className="group flex items-center gap-3 px-4 py-2 rounded-lg hover:bg-white/5 transition-colors cursor-pointer">
-                                    <div className={`w-1.5 h-1.5 rounded-full ${i === 0 ? 'bg-green-500' : 'bg-gray-600'} group-hover:scale-125 transition-transform`}></div>
+                                    <div className={`w - 1.5 h - 1.5 rounded - full ${ i === 0 ? 'bg-green-500' : 'bg-gray-600' } group - hover: scale - 125 transition - transform`}></div>
                                     <div className="flex flex-col">
                                         <span className="text-xs text-gray-400 group-hover:text-gray-300">Protocol {8080 + i}</span>
                                         <span className="text-[10px] text-gray-600">2m ago</span>
@@ -488,10 +499,10 @@ export default function VaultInterface() {
                                 </div>
                                 <div className="flex flex-col overflow-hidden">
                                     <span className="text-xs font-medium text-white truncate">
-                                        {account ? `${account.address.slice(0, 6)}...${account.address.slice(-4)}` : 'Not Connected'}
+                                        {account ? `${ account.address.slice(0, 6) }...${ account.address.slice(-4) } ` : 'Not Connected'}
                                     </span>
                                     <span className="text-[10px] text-gray-500 flex items-center gap-1">
-                                        <div className={`w-1.5 h-1.5 rounded-full ${account ? 'bg-green-500' : 'bg-red-500'}`}></div>
+                                        <div className={`w - 1.5 h - 1.5 rounded - full ${ account ? 'bg-green-500' : 'bg-red-500' } `}></div>
                                         {account ? 'Online' : 'Offline'}
                                     </span>
                                 </div>
@@ -639,8 +650,8 @@ export default function VaultInterface() {
                                                             spellCheck={false}
                                                         />
                                                         <div className="pr-4 flex items-center gap-2 pointer-events-none">
-                                                            <div className={`h-1.5 w-1.5 rounded-full ${recipient ? 'bg-green-500' : 'bg-red-500'}`}></div>
-                                                            <span className={`text-[10px] font-bold tracking-wider uppercase ${recipient ? 'text-green-500' : 'text-red-500'}`}>
+                                                            <div className={`h - 1.5 w - 1.5 rounded - full ${ recipient ? 'bg-green-500' : 'bg-red-500' } `}></div>
+                                                            <span className={`text - [10px] font - bold tracking - wider uppercase ${ recipient ? 'text-green-500' : 'text-red-500' } `}>
                                                                 {recipient ? 'Verified' : 'Invalid'}
                                                             </span>
                                                         </div>
@@ -822,241 +833,288 @@ export default function VaultInterface() {
                                                                 <p className="mb-2 tracking-widest text-neon-cyan">RECIPIENT</p>
                                                                 <a
                                                                     href={`https://suiscan.xyz/testnet/address/${fields.recipient}`}
-                                                                    target="_blank"
-                                                                    rel="noopener noreferrer"
-                                                                    className="text-white text-sm hover:text-neon-cyan hover:underline transition-colors"
-                                                                >
-                                                                    {fields.recipient.slice(0, 6)}...{fields.recipient.slice(-4)}
-                                                                </a>
-                                                            </div>
-                                                            <div>
-                                                                <p className="mb-2 tracking-widest text-neon-cyan">WALRUS BLOB</p>
-                                                                <a
-                                                                    href={`https://walruscan.com/testnet/blob/${fields.blob_id}`}
-                                                                    target="_blank"
-                                                                    rel="noopener noreferrer"
-                                                                    className="text-white text-sm truncate hover:text-neon-cyan hover:underline transition-colors block"
-                                                                >
-                                                                    {fields.blob_id}
-                                                                </a>
-                                                            </div>
-                                                        </div>
-                                                    </div>
+target = "_blank"
+rel = "noopener noreferrer"
+className = "text-white text-sm hover:text-neon-cyan hover:underline transition-colors"
+    >
+    { fields.recipient.slice(0, 6) }...{ fields.recipient.slice(-4) }
+                                                                </a >
+                                                            </div >
+    <div>
+        <p className="mb-2 tracking-widest text-neon-cyan">WALRUS BLOB</p>
+        <a
+            href={`https://walruscan.com/testnet/blob/${fields.blob_id}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-white text-sm truncate hover:text-neon-cyan hover:underline transition-colors block"
+        >
+            {fields.blob_id}
+        </a>
+    </div>
+                                                        </div >
+                                                    </div >
 
-                                                    <div className="w-full md:w-72 flex flex-col gap-4">
-                                                        <DoomsdayClock lastHeartbeat={lastHeartbeat} interval={interval} />
+    <div className="w-full md:w-72 flex flex-col gap-4">
+        <DoomsdayClock lastHeartbeat={lastHeartbeat} interval={interval} />
 
-                                                        <button
-                                                            onClick={() => sendHeartbeat(obj.data?.objectId!)}
-                                                            className="w-full py-4 bg-neon-cyan/10 border border-neon-cyan text-neon-cyan font-bold font-mono tracking-widest rounded-xl hover:bg-neon-cyan hover:text-black transition-all uppercase"
-                                                        >
-                                                            SIGN HEARTBEAT
-                                                        </button>
+        <button
+            onClick={() => sendHeartbeat(obj.data?.objectId!)}
+            className="w-full py-4 bg-neon-cyan/10 border border-neon-cyan text-neon-cyan font-bold font-mono tracking-widest rounded-xl hover:bg-neon-cyan hover:text-black transition-all uppercase"
+        >
+            SIGN HEARTBEAT
+        </button>
 
-                                                        {isExpired && (
-                                                            <button
-                                                                onClick={() => triggerRelease(obj.data?.objectId!)}
-                                                                className="w-full py-3 bg-neon-red/10 border border-neon-red text-neon-red font-bold font-mono tracking-widest rounded-xl hover:bg-neon-red hover:text-black transition-all uppercase text-xs"
-                                                            >
-                                                                TRIGGER RELEASE
-                                                            </button>
-                                                        )}
-                                                    </div>
-                                                </div>
-                                            </div>
+        {isExpired && (
+            <button
+                onClick={() => triggerRelease(obj.data?.objectId!)}
+                className="w-full py-3 bg-neon-red/10 border border-neon-red text-neon-red font-bold font-mono tracking-widest rounded-xl hover:bg-neon-red hover:text-black transition-all uppercase text-xs"
+            >
+                TRIGGER RELEASE
+            </button>
+        )}
+    </div>
+                                                </div >
+                                            </div >
                                         );
                                     })}
-                                    {(!myVaults || myVaults.length === 0) && (
-                                        <div className="text-center py-20 border border-dashed border-white/10 rounded-2xl">
-                                            <p className="text-gray-500 font-mono mb-4">NO ACTIVE NODES DETECTED</p>
-                                            <button onClick={() => setActiveTab('create')} className="text-neon-cyan font-mono text-sm hover:underline">INITIALIZE NEW PROTOCOL</button>
-                                        </div>
-                                    )}
-                                </div>
-                            </motion.div>
+{
+    (!myVaults || myVaults.length === 0) && (
+        <div className="text-center py-20 border border-dashed border-white/10 rounded-2xl">
+            <p className="text-gray-500 font-mono mb-4">NO ACTIVE NODES DETECTED</p>
+            <button onClick={() => setActiveTab('create')} className="text-neon-cyan font-mono text-sm hover:underline">INITIALIZE NEW PROTOCOL</button>
+        </div>
+    )
+}
+                                </div >
+                            </motion.div >
                         ) : (
-                            <motion.div
-                                key="incoming"
-                                initial={{ opacity: 0, x: 20 }}
-                                animate={{ opacity: 1, x: 0 }}
-                                exit={{ opacity: 0, x: -20 }}
-                            >
-                                <div className="flex justify-between items-center mb-12">
-                                    <h2 className="font-mono text-3xl font-bold tracking-tight">INCOMING <span className="text-neon-amber">TRANSMISSIONS</span></h2>
-                                    <button onClick={() => { refetchEvents(); refetchIncomingVaults(); }} className="p-3 hover:bg-white/5 rounded-xl border border-white/10 hover:border-neon-amber/50 transition-all">
-                                        <RefreshCw className="w-5 h-5 text-neon-amber" />
-                                    </button>
-                                </div>
+    <motion.div
+        key="incoming"
+        initial={{ opacity: 0, x: 20 }}
+        animate={{ opacity: 1, x: 0 }}
+        exit={{ opacity: 0, x: -20 }}
+    >
+        <div className="flex justify-between items-center mb-12">
+            <h2 className="font-mono text-3xl font-bold tracking-tight">INCOMING <span className="text-neon-amber">TRANSMISSIONS</span></h2>
+            <button onClick={() => { refetchEvents(); refetchIncomingVaults(); }} className="p-3 hover:bg-white/5 rounded-xl border border-white/10 hover:border-neon-amber/50 transition-all">
+                <RefreshCw className="w-5 h-5 text-neon-amber" />
+            </button>
+        </div>
 
-                                <div className="grid grid-cols-1 gap-6 max-h-[700px] overflow-y-auto pr-4 custom-scrollbar">
-                                    {filteredIncomingVaults?.map((obj) => {
-                                        const content = obj.data?.content as any;
-                                        const fields = content?.fields;
-                                        if (!fields) return null;
+        <div className="grid grid-cols-1 gap-6 max-h-[700px] overflow-y-auto pr-4 custom-scrollbar">
+            {filteredIncomingVaults?.map((obj) => {
+                const content = obj.data?.content as any;
+                const fields = content?.fields;
+                if (!fields) return null;
 
-                                        const lastHeartbeat = Number(fields.last_heartbeat);
-                                        const interval = Number(fields.interval);
-                                        const releaseTime = lastHeartbeat + interval;
-                                        const isExpired = Date.now() > releaseTime;
+                const lastHeartbeat = Number(fields.last_heartbeat);
+                const interval = Number(fields.interval);
+                const releaseTime = lastHeartbeat + interval;
+                const isExpired = Date.now() > releaseTime;
 
-                                        return (
-                                            <div key={obj.data?.objectId} className="p-8 bg-black/40 border border-white/10 rounded-2xl hover:border-neon-amber/50 transition-all group relative overflow-hidden">
-                                                <div className="flex flex-col md:flex-row gap-8 items-center">
-                                                    <div className="flex-1">
-                                                        <div className="flex items-center gap-3 mb-4">
-                                                            <div className={clsx("w-3 h-3 rounded-full shadow-[0_0_10px_currentColor]", isExpired ? "bg-neon-cyan text-neon-cyan" : "bg-neon-amber text-neon-amber")} />
-                                                            <span className="font-mono text-sm text-gray-400 tracking-widest">FROM: {fields.owner.slice(0, 6)}...{fields.owner.slice(-4)}</span>
-                                                            {(() => {
-                                                                const normalizedMyAddress = account?.address ? normalizeSuiAddress(account.address) : '';
-                                                                const normalizedSentinels = fields.sentinels?.map((s: string) => normalizeSuiAddress(s)) || [];
-                                                                const isSentinel = normalizedSentinels.includes(normalizedMyAddress);
-                                                                return isSentinel ? (
-                                                                    <div className="ml-auto bg-yellow-500/20 text-yellow-500 text-[10px] font-bold px-2 py-1 rounded border border-yellow-500/20 flex items-center gap-1">
-                                                                        <Shield className="w-3 h-3" />
-                                                                        SENTINEL WATCH
-                                                                    </div>
-                                                                ) : null;
-                                                            })()}
-
-                                                        </div>
-
-                                                        <div className="mb-4">
-                                                            <h4 className={clsx("font-mono text-2xl font-bold", isExpired ? "text-neon-cyan" : "text-neon-amber")}>
-                                                                {isExpired ? "ENCRYPTION KEY RELEASED" : "PROTOCOL ACTIVE - LOCKED"}
-                                                            </h4>
-                                                        </div>
-
-                                                        <div className="font-mono text-xs text-gray-500">
-                                                            <p className="mb-1">WALRUS BLOB ID</p>
-                                                            <a
-                                                                href={`https://walruscan.com/testnet/blob/${fields.blob_id}`}
-                                                                target="_blank"
-                                                                rel="noopener noreferrer"
-                                                                className="text-white break-all hover:text-neon-cyan hover:underline transition-colors"
-                                                            >
-                                                                {fields.blob_id}
-                                                            </a>
-                                                        </div>
-                                                    </div>
-
-                                                    <div className="w-full md:w-64 flex flex-col gap-2">
-                                                        {isExpired ? (
-                                                            <>
-                                                                <button
-                                                                    onClick={() => decryptVault(obj.data?.objectId!)}
-                                                                    disabled={isDecrypting}
-                                                                    className="w-full px-4 py-2 bg-transparent border border-white/20 rounded-lg text-xs font-mono text-white hover:bg-white/10 transition-all uppercase tracking-wider flex items-center justify-center gap-2"
-                                                                >
-                                                                    {isDecrypting ? <Loader2 className="w-3 h-3 animate-spin" /> : <Unlock className="w-3 h-3" />}
-                                                                    Decrypt & View
-                                                                </button>
-                                                            </>
-                                                        ) : (
-                                                            <>
-                                                                {(() => {
-                                                                    // Check for Sentinel Warning
-                                                                    const sentinelInterval = Number(fields.sentinel_interval);
-                                                                    // Warning starts at: lastHeartbeat + sentinelInterval
-                                                                    // Warning ends at: lastHeartbeat + interval (Release Time)
-                                                                    const warningTime = lastHeartbeat + sentinelInterval;
-                                                                    const isWarning = Date.now() > warningTime && Date.now() < releaseTime;
-
-                                                                    if (isWarning) {
-                                                                        return (
-                                                                            <div className="w-full py-4 bg-neon-red/10 border border-neon-red animate-pulse text-neon-red font-bold font-mono tracking-widest rounded-xl text-center flex flex-col items-center justify-center gap-1">
-                                                                                <span className="text-xs">WARNING</span>
-                                                                                <span className="text-[10px]">CHECK-IN REQUIRED</span>
-                                                                            </div>
-                                                                        );
-                                                                    }
-                                                                    return (
-                                                                        <div className="w-full py-4 bg-neon-amber/5 border border-neon-amber/20 text-neon-amber/50 font-bold font-mono tracking-widest rounded-xl text-center cursor-not-allowed">
-                                                                            AWAITING RELEASE
-                                                                        </div>
-                                                                    );
-                                                                })()}
-                                                            </>
-                                                        )}
-                                                    </div>
-                                                </div>
+                return (
+                    <div key={obj.data?.objectId} className="p-8 bg-black/40 border border-white/10 rounded-2xl hover:border-neon-amber/50 transition-all group relative overflow-hidden">
+                        <div className="flex flex-col md:flex-row gap-8 items-center">
+                            <div className="flex-1">
+                                <div className="flex items-center gap-3 mb-4">
+                                    <div className={clsx("w-3 h-3 rounded-full shadow-[0_0_10px_currentColor]", isExpired ? "bg-neon-cyan text-neon-cyan" : "bg-neon-amber text-neon-amber")} />
+                                    <span className="font-mono text-sm text-gray-400 tracking-widest">FROM: {fields.owner.slice(0, 6)}...{fields.owner.slice(-4)}</span>
+                                    {(() => {
+                                        const normalizedMyAddress = account?.address ? normalizeSuiAddress(account.address) : '';
+                                        const normalizedSentinels = fields.sentinels?.map((s: string) => normalizeSuiAddress(s)) || [];
+                                        const isSentinel = normalizedSentinels.includes(normalizedMyAddress);
+                                        return isSentinel ? (
+                                            <div className="ml-auto bg-yellow-500/20 text-yellow-500 text-[10px] font-bold px-2 py-1 rounded border border-yellow-500/20 flex items-center gap-1">
+                                                <Shield className="w-3 h-3" />
+                                                SENTINEL WATCH
                                             </div>
-                                        );
-                                    })}
-                                    {(!incomingVaults || incomingVaults.length === 0) && (
-                                        <div className="text-center py-20 border border-dashed border-white/10 rounded-2xl">
-                                            <p className="text-gray-500 font-mono">NO INCOMING TRANSMISSIONS</p>
-                                        </div>
-                                    )}
-                                </div>
-                            </motion.div>
-                        )}
-                    </AnimatePresence>
+                                        ) : null;
+                                    })()}
 
-                    {/* Decrypt Modal */}
-                    {decryptedSecret && (
-                        <div className="fixed inset-0 bg-black/90 backdrop-blur-md z-50 flex items-center justify-center p-4" onClick={() => setDecryptedSecret(null)}>
-                            <motion.div
-                                initial={{ opacity: 0, scale: 0.9 }}
-                                animate={{ opacity: 1, scale: 1 }}
-                                className="bg-black border border-neon-cyan shadow-[0_0_50px_rgba(0,243,255,0.2)] rounded-2xl p-8 max-w-3xl w-full relative overflow-hidden"
-                                onClick={(e) => e.stopPropagation()}
-                            >
-                                <div className="scanline" />
-                                <div className="flex justify-between items-center mb-8">
-                                    <h3 className="font-mono text-2xl font-bold text-neon-cyan tracking-widest">DECRYPTED PAYLOAD</h3>
-                                    <div className="px-3 py-1 border border-neon-cyan/30 rounded text-xs font-mono text-neon-cyan">CONFIDENTIAL</div>
                                 </div>
 
-                                <div className="bg-black/60 border border-white/10 rounded-xl p-8 mb-8 max-h-[500px] overflow-y-auto custom-scrollbar">
-                                    <pre className="font-mono text-sm text-white whitespace-pre-wrap break-words leading-relaxed">{decryptedSecret}</pre>
+                                <div className="mb-4">
+                                    <h4 className={clsx("font-mono text-2xl font-bold", isExpired ? "text-neon-cyan" : "text-neon-amber")}>
+                                        {isExpired ? "ENCRYPTION KEY RELEASED" : "PROTOCOL ACTIVE - LOCKED"}
+                                    </h4>
                                 </div>
 
-                                <button
-                                    onClick={() => setDecryptedSecret(null)}
-                                    className="w-full py-4 bg-white text-black font-bold font-mono tracking-widest rounded-xl hover:bg-neon-cyan transition-colors"
-                                >
-                                    CLOSE TERMINAL
-                                </button>
-                            </motion.div>
-                        </div>
-                    )}
-                </div>
-            </div>
-
-            {/* Notification Toast */}
-            <AnimatePresence>
-                {notification && (
-                    <motion.div
-                        initial={{ opacity: 0, y: 50 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: 50 }}
-                        className="fixed bottom-8 right-8 z-50 max-w-md"
-                    >
-                        <div className={clsx(
-                            "p-6 rounded-xl border backdrop-blur-md font-mono shadow-lg",
-                            notification.type === 'success'
-                                ? "bg-neon-cyan/10 border-neon-cyan text-neon-cyan shadow-[0_0_30px_rgba(0,243,255,0.3)]"
-                                : "bg-neon-red/10 border-neon-red text-neon-red shadow-[0_0_30px_rgba(255,0,60,0.3)]"
-                        )}>
-                            <div className="flex items-start gap-3">
-                                <div className="text-2xl">{notification.type === 'success' ? '✅' : '❌'}</div>
-                                <div>
-                                    <div className="font-bold mb-1 tracking-wider">
-                                        {notification.type === 'success' ? 'SUCCESS' : 'ERROR'}
-                                    </div>
-                                    <div className="text-sm text-white/90">{notification.message}</div>
+                                <div className="font-mono text-xs text-gray-500">
+                                    <p className="mb-1">WALRUS BLOB ID</p>
+                                    <a
+                                        href={`https://walruscan.com/testnet/blob/${fields.blob_id}`}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="text-white break-all hover:text-neon-cyan hover:underline transition-colors"
+                                    >
+                                        {fields.blob_id}
+                                    </a>
                                 </div>
-                                <button
-                                    onClick={() => setNotification(null)}
-                                    className="ml-auto text-white/50 hover:text-white transition-colors"
-                                >
-                                    ✕
-                                </button>
+                            </div>
+
+                            <div className="w-full md:w-64 flex flex-col gap-2">
+                                {isExpired ? (
+                                    <>
+                                        <button
+                                            onClick={() => decryptVault(obj.data?.objectId!)}
+                                            disabled={isDecrypting}
+                                            className="w-full px-4 py-2 bg-transparent border border-white/20 rounded-lg text-xs font-mono text-white hover:bg-white/10 transition-all uppercase tracking-wider flex items-center justify-center gap-2"
+                                        >
+                                            {isDecrypting ? <Loader2 className="w-3 h-3 animate-spin" /> : <Unlock className="w-3 h-3" />}
+                                            Decrypt & View
+                                        </button>
+                                    </>
+                                ) : (
+                                    <>
+                                        {(() => {
+                                            // Check for Sentinel Warning
+                                            const sentinelInterval = Number(fields.sentinel_interval);
+                                            // Warning starts at: lastHeartbeat + sentinelInterval
+                                            // Warning ends at: lastHeartbeat + interval (Release Time)
+                                            const warningTime = lastHeartbeat + sentinelInterval;
+                                            const isWarning = Date.now() > warningTime && Date.now() < releaseTime;
+
+                                            if (isWarning) {
+                                                return (
+                                                    <div className="w-full py-4 bg-neon-red/10 border border-neon-red animate-pulse text-neon-red font-bold font-mono tracking-widest rounded-xl text-center flex flex-col items-center justify-center gap-1">
+                                                        <span className="text-xs">WARNING</span>
+                                                        <span className="text-[10px]">CHECK-IN REQUIRED</span>
+                                                    </div>
+                                                );
+                                            }
+                                            return (
+                                                <div className="w-full py-4 bg-neon-amber/5 border border-neon-amber/20 text-neon-amber/50 font-bold font-mono tracking-widest rounded-xl text-center cursor-not-allowed">
+                                                    AWAITING RELEASE
+                                                </div>
+                                            );
+                                        })()}
+                                    </>
+                                )}
                             </div>
                         </div>
-                    </motion.div>
-                )}
-            </AnimatePresence>
-        </section>
+                    </div>
+                );
+            })}
+            {(!incomingVaults || incomingVaults.length === 0) && (
+                <div className="text-center py-20 border border-dashed border-white/10 rounded-2xl">
+                    <p className="text-gray-500 font-mono">NO INCOMING TRANSMISSIONS</p>
+                </div>
+            )}
+        </div>
+    </motion.div>
+)}
+                    </AnimatePresence >
+
+    {/* Decrypt Modal */ }
+{
+    decryptedSecret && (
+        <div className="fixed inset-0 bg-black/90 backdrop-blur-md z-50 flex items-center justify-center p-4" onClick={() => setDecryptedSecret(null)}>
+            <motion.div
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                className="bg-black border border-neon-cyan shadow-[0_0_50px_rgba(0,243,255,0.2)] rounded-2xl p-8 max-w-3xl w-full relative overflow-hidden"
+                onClick={(e) => e.stopPropagation()}
+            >
+                <div className="scanline" />
+                <div className="flex justify-between items-center mb-8">
+                    <h3 className="font-mono text-2xl font-bold text-neon-cyan tracking-widest">DECRYPTED PAYLOAD</h3>
+                    <div className="px-3 py-1 border border-neon-cyan/30 rounded text-xs font-mono text-neon-cyan">CONFIDENTIAL</div>
+                </div>
+
+                <div className="bg-black/60 border border-white/10 rounded-xl p-8 mb-8 max-h-[600px] overflow-y-auto custom-scrollbar flex flex-col gap-4">
+                    {decryptedSecret instanceof Blob ? (
+                        <>
+                            <div className="w-full h-[500px] bg-white rounded-lg overflow-hidden">
+                                <iframe
+                                    src={URL.createObjectURL(decryptedSecret)}
+                                    className="w-full h-full"
+                                    title="Decrypted PDF"
+                                />
+                            </div>
+                            <div className="flex justify-center">
+                                <a
+                                    href={URL.createObjectURL(decryptedSecret)}
+                                    download="decrypted_secret.pdf"
+                                    className="px-6 py-3 bg-neon-cyan/20 border border-neon-cyan text-neon-cyan font-mono font-bold rounded-lg hover:bg-neon-cyan hover:text-black transition-all flex items-center gap-2"
+                                >
+                                    <Download className="w-4 h-4" />
+                                    DOWNLOAD PDF
+                                </a>
+                            </div>
+                        </>
+                    ) : (
+                        <>
+                            <pre className="font-mono text-sm text-white whitespace-pre-wrap break-words leading-relaxed">{decryptedSecret}</pre>
+                            <div className="flex justify-center mt-4">
+                                <button
+                                    onClick={() => {
+                                        const blob = new Blob([decryptedSecret as string], { type: 'text/plain' });
+                                        const url = URL.createObjectURL(blob);
+                                        const a = document.createElement('a');
+                                        a.href = url;
+                                        a.download = 'decrypted_secret.txt';
+                                        a.click();
+                                        URL.revokeObjectURL(url);
+                                    }}
+                                    className="px-6 py-3 bg-white/10 border border-white/20 text-white font-mono font-bold rounded-lg hover:bg-white hover:text-black transition-all flex items-center gap-2"
+                                >
+                                    <Download className="w-4 h-4" />
+                                    DOWNLOAD TEXT
+                                </button>
+                            </div>
+                        </>
+                    )}
+                </div>
+
+                <button
+                    onClick={() => setDecryptedSecret(null)}
+                    className="w-full py-4 bg-white text-black font-bold font-mono tracking-widest rounded-xl hover:bg-neon-cyan transition-colors"
+                >
+                    CLOSE TERMINAL
+                </button>
+            </motion.div>
+        </div>
+    )
+}
+                </div >
+            </div >
+
+    {/* Notification Toast */ }
+    <AnimatePresence>
+{
+    notification && (
+        <motion.div
+            initial={{ opacity: 0, y: 50 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 50 }}
+            className="fixed bottom-8 right-8 z-50 max-w-md"
+        >
+            <div className={clsx(
+                "p-6 rounded-xl border backdrop-blur-md font-mono shadow-lg",
+                notification.type === 'success'
+                    ? "bg-neon-cyan/10 border-neon-cyan text-neon-cyan shadow-[0_0_30px_rgba(0,243,255,0.3)]"
+                    : "bg-neon-red/10 border-neon-red text-neon-red shadow-[0_0_30px_rgba(255,0,60,0.3)]"
+            )}>
+                <div className="flex items-start gap-3">
+                    <div className="text-2xl">{notification.type === 'success' ? '✅' : '❌'}</div>
+                    <div>
+                        <div className="font-bold mb-1 tracking-wider">
+                            {notification.type === 'success' ? 'SUCCESS' : 'ERROR'}
+                        </div>
+                        <div className="text-sm text-white/90">{notification.message}</div>
+                    </div>
+                    <button
+                        onClick={() => setNotification(null)}
+                        className="ml-auto text-white/50 hover:text-white transition-colors"
+                    >
+                        ✕
+                    </button>
+                </div>
+            </div>
+        </motion.div>
+    )
+}
+            </AnimatePresence >
+        </section >
     );
 }

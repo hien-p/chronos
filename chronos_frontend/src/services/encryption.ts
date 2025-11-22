@@ -49,7 +49,7 @@ export const EncryptionService = {
         encryptedBytes: Uint8Array,
         sessionKey: SessionKey,
         txBytes: Uint8Array
-    ): Promise<string> {
+    ): Promise<Uint8Array> {
         const suiClient = new SuiClient({ url: getFullnodeUrl('testnet') });
 
         const client = new SealClient({
@@ -64,7 +64,7 @@ export const EncryptionService = {
             txBytes,
         });
 
-        return new TextDecoder().decode(decryptedBytes);
+        return decryptedBytes;
     },
 
     /**
