@@ -10,15 +10,36 @@ interface WalrusShatterProps {
 export const WalrusShatter = ({ isUploading, onComplete }: WalrusShatterProps) => {
     const [stage, setStage] = useState<'idle' | 'shatter' | 'encrypt' | 'disperse'>('idle');
 
+    const [shards, setShards] = useState<{ x: number, y: number }[]>([]);
+
+    useEffect(() => {
+        // Use setTimeout to avoid synchronous state update warning and ensure purity
+        const timer = setTimeout(() => {
+            setShards([...Array(12)].map(() => ({
+                x: (Math.random() - 0.5) * 500,
+                y: (Math.random() - 0.5) * 500,
+            })));
+        }, 0);
+        return () => clearTimeout(timer);
+    }, []);
+
     useEffect(() => {
         if (isUploading) {
-            setStage('shatter');
-            setTimeout(() => setStage('encrypt'), 1000);
-            setTimeout(() => setStage('disperse'), 2000);
-            setTimeout(() => {
+            // Use setTimeout to avoid synchronous state update warning
+            const t1 = setTimeout(() => setStage('shatter'), 0);
+            const t2 = setTimeout(() => setStage('encrypt'), 1000);
+            const t3 = setTimeout(() => setStage('disperse'), 2000);
+            const t4 = setTimeout(() => {
                 setStage('idle');
                 if (onComplete) onComplete();
             }, 3500);
+
+            return () => {
+                clearTimeout(t1);
+                clearTimeout(t2);
+                clearTimeout(t3);
+                clearTimeout(t4);
+            };
         }
     }, [isUploading, onComplete]);
 
@@ -56,13 +77,13 @@ export const WalrusShatter = ({ isUploading, onComplete }: WalrusShatterProps) =
                 {/* Shards Dispersing */}
                 {stage === 'disperse' && (
                     <>
-                        {[...Array(12)].map((_, i) => (
+                        {shards.map((shard, i) => (
                             <motion.div
                                 key={i}
                                 initial={{ x: 0, y: 0, opacity: 1, scale: 1 }}
                                 animate={{
-                                    x: (Math.random() - 0.5) * 500,
-                                    y: (Math.random() - 0.5) * 500,
+                                    x: shard.x,
+                                    y: shard.y,
                                     opacity: 0,
                                     scale: 0
                                 }}

@@ -26,7 +26,7 @@ const MatrixBackground = () => {
         // Characters to drop: 0, 1, and some time-related letters
         const chars = "01CHRONOSTIMEAIXY";
         const fontSize = 14;
-        let columns = Math.floor(width / fontSize);
+        const columns = Math.floor(canvas.width / fontSize);
 
         // Array of drops - one per column
         const drops: number[] = [];
